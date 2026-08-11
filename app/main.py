@@ -5,7 +5,11 @@ from pydantic import BaseModel, field_validator, model_validator
 from typing_extensions import TypedDict
 
 
-app = FastAPI()
+app = FastAPI(
+    title="Task API",
+    version="1.0",
+    description="A small in-memory API for managing tasks.",
+)
 
 
 class Task(TypedDict):
@@ -66,22 +70,22 @@ async def validation_error_handler(request: object, exc: RequestValidationError)
     return JSONResponse(status_code=400, content={"error": "Invalid request"})
 
 
-@app.get("/")
+@app.get("/", summary="Show API metadata")
 def read_root() -> dict[str, str | list[str]]:
     return {"name": "Task API", "version": "1.0", "endpoints": ["/tasks"]}
 
 
-@app.get("/health")
+@app.get("/health", summary="Check API health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/tasks")
+@app.get("/tasks", summary="List tasks")
 def list_tasks() -> list[Task]:
     return tasks
 
 
-@app.get("/tasks/{task_id}", response_model=None)
+@app.get("/tasks/{task_id}", response_model=None, summary="Get a task")
 def get_task(task_id: int) -> Task | JSONResponse:
     task = find_task(task_id)
     if task is None:
@@ -89,7 +93,7 @@ def get_task(task_id: int) -> Task | JSONResponse:
     return task
 
 
-@app.post("/tasks", status_code=201)
+@app.post("/tasks", status_code=201, summary="Create a task")
 def create_task(payload: TaskCreate) -> Task:
     task: Task = {
         "id": max((task["id"] for task in tasks), default=0) + 1,
@@ -100,7 +104,7 @@ def create_task(payload: TaskCreate) -> Task:
     return task
 
 
-@app.put("/tasks/{task_id}", response_model=None)
+@app.put("/tasks/{task_id}", response_model=None, summary="Update a task")
 def update_task(task_id: int, payload: TaskUpdate) -> Task | JSONResponse:
     task = find_task(task_id)
     if task is None:
@@ -112,7 +116,12 @@ def update_task(task_id: int, payload: TaskUpdate) -> Task | JSONResponse:
     return task
 
 
-@app.delete("/tasks/{task_id}", status_code=204, response_class=Response)
+@app.delete(
+    "/tasks/{task_id}",
+    status_code=204,
+    response_class=Response,
+    summary="Delete a task",
+)
 def delete_task(task_id: int) -> Response:
     task = find_task(task_id)
     if task is None:
