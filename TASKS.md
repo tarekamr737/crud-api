@@ -1,7 +1,7 @@
 # TASKS.md
 
 - [x] S0 Scaffold FastAPI; `GET /` hello; run; commit `Stage 0: hello server`
-- [ ] S1 Add required `/` metadata + `/health`; verify 200; commit `Stage 1: root and health endpoints`
+- [x] S1 Add required `/` metadata + `/health`; verify 200; commit `Stage 1: root and health endpoints`
 - [ ] S2 Seed 3 tasks; add GET list/single + 404 JSON; commit `Stage 2: read endpoints with 404`
 - [ ] S3 Add POST; next ID; `done=false`; 201; invalid title → 400; commit `Stage 3: create with validation`
 - [ ] S4 Add PUT + DELETE; 400/404; DELETE 204 empty; run full CRUD; commit `Stage 4: full CRUD`
