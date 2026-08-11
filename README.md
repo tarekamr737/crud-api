@@ -1,5 +1,8 @@
 # Task API
 
+<img width="1803" height="1363" alt="swagger-ui" src="https://github.com/user-attachments/assets/3a2e96eb-f755-4c2a-8b91-4acbfaa4f600" />
+
+
 Task API is a small FastAPI project demonstrating create, read, update, and
 delete operations against an in-memory to-do list.
 
