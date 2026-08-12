@@ -59,6 +59,12 @@
 - After restart, GET `/tasks` returned HTTP 200 with all five rows, including both new tasks under their original IDs.
 - Direct `psql` returned the same five IDs, titles, and boolean values in order; `docker compose ps` reported both recreated services `Up`.
 
+## A3 Push — Public repository delivery
+
+- `git push origin main` updated `https://github.com/tarekamr737/crud-api.git` from `cdf8737` to `ed9a4ca`.
+- `git ls-remote origin refs/heads/main` returned `ed9a4cadbeb8b85503c5380723f809b7099dd12f`, exactly matching the local FINAL commit before this delivery bookkeeping commit.
+- Audited the linear history and confirmed the required Stage 0 through Stage 5 messages, followed by dedicated TEST and FINAL commits; each stage was committed only after its recorded checkpoint passed.
+
 ## Stage 0 — SQLite initialization
 
 - `python -m pytest tests/test_db.py -q` → `2 passed in 0.06s`.
