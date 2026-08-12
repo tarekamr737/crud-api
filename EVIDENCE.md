@@ -21,6 +21,14 @@
 - Login tests prove HTTP 200 returns access and refresh tokens; missing/blank fields return JSON 400 and rejected credentials return stable JSON 401 without provider details.
 - The request model passes passwords directly to Supabase and no application code stores, hashes, signs, or logs credentials or tokens.
 
+## A4 Stage 2 — Public and protected routes
+
+- `.venv\Scripts\python.exe -m pytest tests\test_auth.py tests\test_auth_dependency.py -q` returned `13 passed`.
+- `/public/info` returns the exact required message with HTTP 200 and no authentication header.
+- The reusable `HTTPBearer` dependency rejects missing, non-Bearer, empty, whitespace-containing, invalid, and expired/tampered credentials with stable JSON 401 responses and a `WWW-Authenticate: Bearer` header.
+- A valid token is passed unchanged to `supabase.auth.get_user(token)`; the verified user then reaches both `/protected/profile` and `/protected/dashboard` through the same dependency.
+- Profile output is limited to `id`, `email`, and `created_at`; the dashboard exposes only a message and verified user ID.
+
 ## A3 Stage 0 — PostgreSQL in Docker
 
 - `docker volume create crud-api-taskdata` created the named persistence volume.

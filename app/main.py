@@ -1,10 +1,10 @@
-from fastapi import FastAPI, Response
+from fastapi import Depends, FastAPI, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator, model_validator
 from supabase_auth.errors import AuthError
 
-from app.auth import supabase
+from app.auth import get_current_user, supabase
 from app.repository import (
     Task,
     create_task as create_task_record,
@@ -14,6 +14,7 @@ from app.repository import (
     list_tasks as list_task_records,
     update_task as update_task_record,
 )
+from supabase_auth.types import User
 
 
 app = FastAPI(
@@ -86,6 +87,32 @@ def read_root() -> dict[str, str | list[str]]:
 @app.get("/health", summary="Check API health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/public/info", summary="Show public information")
+def public_info() -> dict[str, str]:
+    return {"message": "Welcome stranger! This info is public."}
+
+
+@app.get("/protected/profile", summary="Show the authenticated user profile")
+def protected_profile(
+    current_user: User = Depends(get_current_user),
+) -> dict[str, str | None]:
+    return {
+        "id": str(current_user.id),
+        "email": current_user.email,
+        "created_at": str(current_user.created_at),
+    }
+
+
+@app.get("/protected/dashboard", summary="Show protected dashboard data")
+def protected_dashboard(
+    current_user: User = Depends(get_current_user),
+) -> dict[str, str]:
+    return {
+        "message": "This dashboard is protected.",
+        "user_id": str(current_user.id),
+    }
 
 
 @app.post(

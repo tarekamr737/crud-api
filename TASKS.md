@@ -7,11 +7,11 @@
 - [x] Configure Supabase client using URL + anon key only.
 - [x] Add signup → 201/400.
 - [x] Add login → 200 tokens / 400 / 401.
-- [ ] Add `/public/info` → 200.
-- [ ] Add reusable `HTTPBearer` + `get_current_user`.
-- [ ] Verify JWT using Supabase `get_user(token)`.
-- [ ] Add `/protected/profile` → 200; bad/missing token → 401.
-- [ ] Add second protected route using same dependency.
+- [x] Add `/public/info` → 200.
+- [x] Add reusable `HTTPBearer` + `get_current_user`.
+- [x] Verify JWT using Supabase `get_user(token)`.
+- [x] Add `/protected/profile` → 200; bad/missing token → 401.
+- [x] Add second protected route using same dependency.
 - [ ] Add protected logout → 204.
 - [ ] Verify Swagger `/docs` Authorize + protected-route locks.
 - [ ] Test valid, missing, malformed, expired/tampered token flows.
