@@ -54,3 +54,9 @@
 - Before and after a complete server stop/restart, GET `/tasks` returned the identical state: tasks 2, 3, and 4 with task 4 still done.
 - DB Browser ran `docs/final-verify.sql` against that clone with exit code 0. A separate SQLite connection returned `[[2, "Write report", 1], [3, "Call dentist", 0], [4, "Restart survivor", 1]]`, exactly matching the API after boolean conversion.
 - Stopped both server process trees and removed the validated temporary clone.
+
+## Push — Public repository delivery
+
+- `git push origin main` updated `https://github.com/tarekamr737/crud-api.git` from `afddfc4` to `3121075`.
+- `git ls-remote origin refs/heads/main` returned `3121075aa57e852b81d9cb14caee15f9df05213c`, matching the local FINAL commit before the delivery bookkeeping commit.
+- Verified the history contains the required Stage 0 through Stage 5 commit messages followed by dedicated TEST and FINAL commits.
