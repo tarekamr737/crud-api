@@ -1,10 +1,8 @@
-import sqlite3
-
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.db import DB_PATH
+from app.repository import SEED_TASKS as DB_SEED_TASKS, connect
 
 
 SEED_TASKS = [
@@ -18,13 +16,12 @@ client = TestClient(app)
 
 @pytest.fixture(autouse=True)
 def reset_tasks() -> None:
-    with sqlite3.connect(DB_PATH) as connection:
-        connection.execute("DELETE FROM tasks")
-        connection.executemany(
-            "INSERT INTO tasks (id, title, done) VALUES (?, ?, ?)",
-            [(task["id"], task["title"], int(task["done"])) for task in SEED_TASKS],
-        )
-        connection.commit()
+    with connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute("TRUNCATE TABLE tasks RESTART IDENTITY")
+            cursor.executemany(
+                "INSERT INTO tasks (title, done) VALUES (%s, %s)", DB_SEED_TASKS
+            )
 
 
 def test_root_and_health() -> None:
@@ -102,24 +99,26 @@ def test_update_delete_and_missing_behavior() -> None:
 def test_api_mutations_match_database_rows() -> None:
     created = client.post("/tasks", json={"title": "Database truth"}).json()
 
-    with sqlite3.connect(DB_PATH) as connection:
-        row = connection.execute(
-            "SELECT id, title, done FROM tasks WHERE id = ?", (created["id"],)
-        ).fetchone()
-    assert row == (created["id"], "Database truth", 0)
+    with connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, title, done FROM tasks WHERE id = %s", (created["id"],)
+            )
+            row = cursor.fetchone()
+    assert row == (created["id"], "Database truth", False)
 
     client.put(f"/tasks/{created['id']}", json={"done": True})
-    with sqlite3.connect(DB_PATH) as connection:
-        done = connection.execute(
-            "SELECT done FROM tasks WHERE id = ?", (created["id"],)
-        ).fetchone()[0]
-    assert done == 1
+    with connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT done FROM tasks WHERE id = %s", (created["id"],))
+            done = cursor.fetchone()[0]
+    assert done is True
 
     client.delete(f"/tasks/{created['id']}")
-    with sqlite3.connect(DB_PATH) as connection:
-        missing = connection.execute(
-            "SELECT id FROM tasks WHERE id = ?", (created["id"],)
-        ).fetchone()
+    with connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id FROM tasks WHERE id = %s", (created["id"],))
+            missing = cursor.fetchone()
     assert missing is None
 
 

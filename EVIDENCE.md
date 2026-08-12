@@ -21,6 +21,14 @@
 - The unchanged endpoint assertions received the three PostgreSQL seed rows with HTTP 200, received task 2 by ID with HTTP 200, and retained the JSON HTTP 404 response for ID 99.
 - `app/repository.py` binds the route ID with `WHERE id = %s` and `(task_id,)`; routes contain no SQL.
 
+## A3 Stage 3 — Full PostgreSQL CRUD
+
+- `python -m pytest -q` with the PostgreSQL URL set returned `16 passed in 2.68s`.
+- The preserved API tests prove POST 201, PUT 200, DELETE 204 with an empty body, invalid POST/PUT 400 JSON, and missing-resource 404 JSON behavior.
+- Repository tests create ID 4, update task 1, delete task 2, call database initialization again, and confirm all mutations remain in PostgreSQL.
+- The API/database integration test verifies created, updated, and deleted state through a separate PostgreSQL connection after each HTTP mutation.
+- A source audit found no SQLite import or route SQL. Every request-derived title, boolean, and ID is passed separately to a `%s` placeholder in `app/repository.py`.
+
 ## Stage 0 — SQLite initialization
 
 - `python -m pytest tests/test_db.py -q` → `2 passed in 0.06s`.

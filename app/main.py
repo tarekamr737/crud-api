@@ -2,16 +2,14 @@ from fastapi import FastAPI, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator, model_validator
-from app.db import (
-    delete_task_record,
-    insert_task,
-    update_task_record,
-)
 from app.repository import (
     Task,
+    create_task as create_task_record,
+    delete_task as delete_task_record,
     get_task as get_task_record,
     init_db,
     list_tasks as list_task_records,
+    update_task as update_task_record,
 )
 
 
@@ -90,7 +88,7 @@ def get_task(task_id: int) -> Task | JSONResponse:
 
 @app.post("/tasks", status_code=201, summary="Create a task")
 def create_task(payload: TaskCreate) -> Task:
-    return insert_task(payload.title)
+    return create_task_record(payload.title)
 
 
 @app.put("/tasks/{task_id}", response_model=None, summary="Update a task")
