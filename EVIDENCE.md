@@ -50,6 +50,15 @@
 - Chrome DevTools loaded `http://127.0.0.1:8000/docs`; its accessibility tree contained the global **Authorize** control and authentication controls on `/protected/profile`, `/protected/dashboard`, and `/auth/logout`, while public/signup/login routes remained unlocked.
 - Captured and visually inspected the current `docs/swagger-ui.png`; it clearly shows the auth endpoints, public/protected routes, Authorize control, and protected-route lock icons.
 
+## A4 Final — Live hosted Auth flow
+
+- With Confirm Email disabled in the hosted project's Email provider settings, a disposable live signup returned HTTP 201 and its immediate password login returned HTTP 200 with both access and refresh token fields present; no credential or token value was printed or stored.
+- The returned access token reached `/protected/profile` and `/protected/dashboard` with HTTP 200. The same profile request returned HTTP 401 when the token was omitted and when its signature was tampered with.
+- `/public/info` remained accessible with HTTP 200 and authenticated `/auth/logout` returned HTTP 204.
+- Authenticated, project-scoped Supabase MCP logs independently showed two successful hosted signups, two successful password token exchanges, repeated successful user verification, one provider-level rejection of the tampered token, and two successful logouts.
+- Current Supabase MCP documentation confirms that disabling Confirm Email autoconfirms email/password signups and permits immediate password login; its changelog search found no breaking change affecting this behavior.
+- `.venv\Scripts\python.exe -m pytest -q` against a disposable PostgreSQL 17 instance with its data under the `D:` workspace returned `33 passed in 7.09s`; the container and verified temporary data directory were then removed.
+
 ## A3 Stage 0 — PostgreSQL in Docker
 
 - `docker volume create crud-api-taskdata` created the named persistence volume.

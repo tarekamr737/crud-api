@@ -27,6 +27,11 @@
 - A later Chrome DevTools MCP session became available, so the stale screenshot was replaced with a live `/docs` capture and the README documentation checkpoint was completed.
 - The authenticated Supabase MCP tool set can inspect docs, project metadata, database state, advisors, and logs, but does not expose hosted Auth provider configuration. It confirmed `email_not_confirmed`; disabling confirmation remains a Dashboard-only step for this project.
 
+## A4 Final
+
+- Used the user-disabled Confirm Email setting for the assignment's immediate signup-to-login acceptance flow. Supabase remains the sole password and identity manager; the application configuration and token verification code did not require a workaround or privileged key.
+- The first final regression attempt stopped during collection because the shell had not loaded the ignored Supabase settings. Loaded only `SUPABASE_URL` and `SUPABASE_KEY` from `.env` into the retry's process environment; the unchanged suite then passed all 33 tests.
+
 ## A3 Stage 0
 
 - Used a temporary standalone PostgreSQL container for the database-only checkpoints in Stages 0–3; the required two-service Compose definition remains isolated to Stage 4.
