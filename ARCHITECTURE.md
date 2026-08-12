@@ -1,178 +1,135 @@
 # ARCHITECTURE.md
 
 ## Stack
-Keep the existing stack:
 - Python 3.10+
-- FastAPI
-- Uvicorn
-- Pydantic
+- FastAPI + Uvicorn + Pydantic
+- PostgreSQL
+- `psycopg[binary]`
+- Docker + Docker Compose
 - pytest / FastAPI TestClient
 
-Add no database dependency:
-- use Python standard-library `sqlite3`
-
-## Target structure
-Keep the existing repo structure. Prefer minimal change, for example:
-
+## Keep structure minimal
 ```text
-.
-├── app/
-│   ├── main.py
-│   └── db.py          # optional; only if it reduces repeated DB code
-├── tests/
-│   └── test_api.py
-├── tasks.db           # runtime-created, git-ignored
-├── .gitignore
-├── README.md
-├── AGENTS.md
-├── PRODUCT.md
-├── ARCHITECTURE.md
-└── TASKS.md
+app/
+  main.py
+  repository.py
+tests/
+Dockerfile
+compose.yaml
+.env
+.env.example
+.gitignore
+.dockerignore
+requirements.txt
+README.md
 ```
 
-Do not reorganize a working A1 project just to match this example.
+Do not reorganize working A2 code just to match this tree.
 
-## Storage design
+## Rule
+```text
+HTTP -> FastAPI routes -> repository.py -> psycopg -> PostgreSQL
+```
+Only repository code talks to the DB.
 
-### Connection
-Use:
+## Config
 ```python
-sqlite3.connect(DB_PATH)
+DATABASE_URL = os.environ["DATABASE_URL"]
 ```
 
-Configure row access if useful:
-```python
-conn.row_factory = sqlite3.Row
+Local host may be `localhost`; inside Compose API must use host `db`.
+
+## Repository responsibilities
+Prefer small functions:
+```text
+connect
+init_db
+seed_if_empty
+list_tasks
+get_task
+create_task
+update_task
+delete_task
 ```
 
-Keep connection lifetime obvious and safe. A small helper/context-manager is enough.
+## Connection
+Use context-managed psycopg connections/cursors.
 
-### Initialization
-On application startup or module initialization:
+## Schema
 ```sql
 CREATE TABLE IF NOT EXISTS tasks (
-    id INTEGER PRIMARY KEY,
-    title TEXT NOT NULL,
-    done INTEGER NOT NULL DEFAULT 0
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  done BOOLEAN NOT NULL DEFAULT FALSE
 );
 ```
 
-Then:
-```sql
-SELECT COUNT(*) FROM tasks;
-```
+Seed only when `SELECT COUNT(*) FROM tasks` is zero.
 
-If count is zero, insert the 3 A1 seed tasks.
-
-Prefer one transaction for the seed if simple.
-
-## Row mapping
-SQLite stores `done` as 0/1. API returns boolean.
-
-Conceptually:
-```python
-{
-    "id": row["id"],
-    "title": row["title"],
-    "done": bool(row["done"]),
-}
-```
-
-## Route storage mapping
-
-### GET `/tasks`
-```sql
-SELECT id, title, done FROM tasks;
-```
-
-### GET `/tasks/{id}`
-```sql
-SELECT id, title, done FROM tasks WHERE id = ?;
-```
-
-### POST `/tasks`
-```sql
-INSERT INTO tasks (title, done) VALUES (?, ?);
-```
-
-Use `cursor.lastrowid`, then return the inserted task.
-
-### PUT `/tasks/{id}`
-Preserve current A1 partial-update semantics.
-
-Recommended small approach:
-1. fetch current row
-2. 404 if missing
-3. merge supplied fields with existing values
-4. execute:
-```sql
-UPDATE tasks
-SET title = ?, done = ?
-WHERE id = ?;
-```
-5. return updated row
-
-### DELETE `/tasks/{id}`
-```sql
-DELETE FROM tasks WHERE id = ?;
-```
-
-Check existence/affected rows; missing -> 404.
-Success -> 204 empty body.
-
-## SQL safety
+## Parameterization
 Correct:
 ```python
-conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+cur.execute("SELECT id,title,done FROM tasks WHERE id=%s", (task_id,))
 ```
 
 Forbidden:
 ```python
-f"SELECT * FROM tasks WHERE id = {task_id}"
+cur.execute(f"SELECT * FROM tasks WHERE id={task_id}")
 ```
 
-All request-derived values must be bound parameters.
+## Route mapping
+GET list -> SELECT all.
+GET one -> SELECT by id.
+POST -> INSERT ... RETURNING.
+PUT -> fetch existing, merge supplied fields, UPDATE ... RETURNING.
+DELETE -> parameterized DELETE; missing -> 404; success -> 204.
 
-## Testing strategy
+## Dockerfile
+Keep minimal: Python base -> workdir -> install requirements -> copy app -> run Uvicorn on `0.0.0.0`.
 
-### Preserve A1 contract tests
-Old endpoint tests are regression tests and should keep passing.
+## Compose
+Two services:
+- `api`: build repo, expose app port, inject `DATABASE_URL`, depends on `db`
+- `db`: official postgres image, env config, named volume `taskdata`
 
-### Add DB-focused tests
-Test:
-- DB created when missing
-- table created when missing
+## Startup reliability
+`depends_on` is not DB readiness. Use the smallest reliable option:
+- tiny connection retry, or
+- DB healthcheck + conditional dependency.
+
+Do not add a large retry framework.
+
+## Testing
+Keep A1/A2 contract tests unchanged where possible. Add checks for:
+- schema auto-create
 - seed exactly once
-- restart/reinitialize does not duplicate seeds
-- create persists across a fresh app/connection
-- update persists
-- delete persists
-- API and direct DB rows agree
-
-Use an isolated temporary SQLite file for automated tests if practical.
-Never let tests depend on the developer's real `tasks.db`.
-
-## Manual verification
-1. delete local `tasks.db`
-2. start app
-3. verify exactly 3 tasks
-4. create another task
-5. stop app
-6. restart
-7. verify new task remains
-8. open DB Browser and confirm same rows
-9. change data in DB Browser
-10. call API and confirm change is immediately visible
+- CRUD against Postgres
+- full-stack persistence
+- `.env` not tracked
+- direct DB rows match API
 
 ## Git hygiene
-Add:
+`.gitignore`:
 ```gitignore
-tasks.db
-*.db-journal
+.env
+.venv/
+__pycache__/
+.pytest_cache/
 ```
 
-Do not commit local DB state unless the assignment specifically requires it.
+`.dockerignore`:
+```text
+.git
+.env
+.venv
+__pycache__
+.pytest_cache
+tasks.db
+```
 
-## Design principles
-The API is the stable contract; SQLite is an implementation detail.
-Change storage, not behavior.
+## Clean-clone acceptance
+```bash
+cp .env.example .env
+docker compose up
+```
+must yield a running API, running Postgres, auto-created table, 3 seed rows, and unchanged CRUD behavior.

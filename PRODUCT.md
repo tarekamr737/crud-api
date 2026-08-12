@@ -1,126 +1,124 @@
 # PRODUCT.md
 
-# Task API — Week 3 SQLite Upgrade
+# Task API — A3 Containerized Postgres Upgrade
 
 ## Goal
-Upgrade the existing Assignment 1 Task API so tasks are stored in SQLite
-instead of an in-memory Python list.
+Move the existing A1/A2 Task API from SQLite to PostgreSQL running in Docker, then containerize the API so:
 
-The client-visible API must remain the same; only persistence changes.
+```bash
+docker compose up
+```
 
-## Core outcome
-Before:
+starts the whole stack.
+
+## Storage evolution
 ```text
-Client -> FastAPI -> in-memory list
+A1: FastAPI -> memory
+A2: FastAPI -> SQLite
+A3: FastAPI -> PostgreSQL in Docker
 ```
 
-After:
-```text
-Client -> FastAPI -> SQLite (`tasks.db`)
-```
+The client-visible API must not change.
 
-Data must survive server restarts.
+## API contract
+| Method | Path | Success |
+|---|---|---|
+| GET | `/` | 200 |
+| GET | `/health` | 200 |
+| GET | `/tasks` | 200 |
+| GET | `/tasks/{id}` | 200 |
+| POST | `/tasks` | 201 |
+| PUT | `/tasks/{id}` | 200 |
+| DELETE | `/tasks/{id}` | 204 |
 
-## Existing API contract — DO NOT CHANGE
+Keep A1/A2 validation:
+- missing/empty POST title -> 400
+- invalid/empty PUT -> 400
+- unknown ID -> 404 JSON
+- DELETE success -> 204 empty body
 
-| Method | Path | Behavior | Success |
-|---|---|---|---|
-| GET | `/` | API metadata | 200 |
-| GET | `/health` | Health status | 200 |
-| GET | `/tasks` | List tasks | 200 |
-| GET | `/tasks/{id}` | Get one task | 200 |
-| POST | `/tasks` | Create task | 201 |
-| PUT | `/tasks/{id}` | Update task | 200 |
-| DELETE | `/tasks/{id}` | Delete task | 204 |
-
-Task response:
-```json
-{"id":1,"title":"Buy milk","done":false}
-```
-
-Carry forward A1 validation:
-- missing/empty title on POST -> 400
-- invalid/empty PUT body -> 400
-- unknown ID -> 404 JSON error
-- DELETE success -> 204 with empty body
-
-## Database requirements
-Database file:
-```text
-tasks.db
-```
+## Database
+Use `DATABASE_URL` from environment.
 
 Schema:
 ```sql
 CREATE TABLE IF NOT EXISTS tasks (
-  id INTEGER PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   title TEXT NOT NULL,
-  done INTEGER NOT NULL DEFAULT 0
+  done BOOLEAN NOT NULL DEFAULT FALSE
 );
 ```
 
-Startup behavior:
-1. create/open `tasks.db`
-2. create `tasks` table if missing
+Startup:
+1. connect
+2. create table if missing
 3. count rows
-4. insert 3 example tasks only when count is 0
+4. seed 3 examples only when empty
 
-Restarting repeatedly must never multiply seed rows.
-
-## CRUD persistence
-- GET reads with SQL
-- POST inserts with SQL and lets SQLite assign ID
-- PUT updates with SQL
-- DELETE deletes with SQL
-- all values derived from requests use parameterized placeholders
-- created/updated/deleted state survives restart
-
-## Manual SQL learning requirement
-Using DB Browser for SQLite, run:
+## CRUD SQL
 ```sql
-SELECT * FROM tasks;
-SELECT * FROM tasks WHERE done = 1;
-SELECT COUNT(*) FROM tasks;
-UPDATE tasks SET done = 1;
-DELETE FROM tasks WHERE done = 1;
+SELECT id,title,done FROM tasks;
+SELECT id,title,done FROM tasks WHERE id = %s;
+INSERT INTO tasks (title,done) VALUES (%s,%s) RETURNING id,title,done;
+UPDATE tasks SET title=%s, done=%s WHERE id=%s RETURNING id,title,done;
+DELETE FROM tasks WHERE id=%s;
 ```
 
-README must include one query and one sentence describing its result.
+All request-derived values must be parameters.
+
+## Docker
+Postgres:
+- official `postgres` image
+- DB name `tasks`
+- named volume
+- environment-driven credentials
+
+API:
+- built from a small `Dockerfile`
+- connects to host `db` inside Compose
+- receives `DATABASE_URL`
+
+Compose services:
+```text
+api
+db
+```
+
+## Secrets
+```text
+.env          # local real values; never commit
+.env.example  # committed template
+```
+
+## Persistence
+Create tasks, run:
+```bash
+docker compose down
+docker compose up
+```
+Tasks must remain.
 
 ## Delivery
-Continue in the same public GitHub repo from A1.
-
-README update must include:
-- why SQLite was chosen
-- where `tasks.db` lives
-- that DB/table are auto-created
-- one documented start command
-- DB Browser screenshot
-- one SQL query from Stage 4
-
-A clean clone must run with no manual DB setup.
+Continue in the same public repo. README must include:
+- what the stack is
+- `.env.example` setup
+- `docker compose up`
+- env vars
+- endpoint table
+- one `curl -i`
+- DB screenshot/psql proof
+- persistence explanation
 
 ## Non-goals
-No Postgres, ORM migration system, auth, frontend, Docker, cloud deployment,
-microservices, Redis, async DB stack, or schema expansion unless optional work
-is explicitly started later.
+No Kubernetes, Redis, cloud deployment, CI/CD, reverse proxy, TLS, auth, secrets manager, observability, or advanced DB tuning.
 
-## Optional extras
-Only after required acceptance passes:
-- SQL search with `LIKE`
-- filter by `done`
-- `ORDER BY title`
-- SQL-powered `/stats`
-- timestamps
-- index
-- transaction for multi-row seed
+## Optional
+Only after core acceptance:
+- DB-aware `/health`
+- index + `EXPLAIN ANALYZE`
+- Redis
+- multi-stage Dockerfile
+- no-volume mortality experiment
 
 ## Acceptance
-- same CRUD API contract as A1
-- SQLite is the source of truth
-- DB/table auto-create
-- exactly 3 seed rows on first empty DB
-- persistence survives restart
-- all request-derived SQL values are parameterized
-- required 200/201/204/400/404 behavior preserved
-- A1 endpoint tests still pass
+Postgres runs in Docker; whole stack starts with one Compose command; API contract unchanged; schema/seed auto-create; CRUD uses Postgres; SQL is parameterized; `.env` ignored and `.env.example` committed; data survives full-stack restart; clean clone works in under 5 minutes.

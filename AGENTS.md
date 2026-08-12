@@ -1,94 +1,70 @@
 # AGENTS.md
 
 ## Mission
-Upgrade the existing A1 FastAPI CRUD API from in-memory storage to SQLite
-without changing the public API contract.
+Upgrade the existing A1/A2 FastAPI Task API from SQLite to PostgreSQL in Docker, then run API + DB together with one `docker compose up`.
 
 ## Read order
 1. `PRODUCT.md`
 2. `ARCHITECTURE.md`
 3. `TASKS.md`
-4. Existing code/tests/README only as needed
+4. Existing repo files only as needed
 
 ## Priorities
-1. Preserve A1 behavior exactly.
-2. Replace only storage concerns.
-3. Use safe parameterized SQL.
-4. Prove persistence.
-5. Keep code/dependencies minimal.
+1. Preserve API behavior.
+2. Change storage/infrastructure only.
+3. Keep DB code in one small repository module.
+4. Keep secrets out of Git.
+5. One-command startup.
+6. Lowest reasonable tokens/dependencies.
 
 ## Hard constraints
-- Continue in the SAME repo and SAME Python/FastAPI lane.
-- Use SQLite database file `tasks.db`.
-- Prefer Python stdlib `sqlite3`; do not add ORM unless already present.
-- No in-memory task list as source of truth.
-- Auto-create DB/table on startup.
-- Table: `tasks(id INTEGER PRIMARY KEY, title TEXT, done INTEGER/BOOLEAN)`.
-- Seed exactly 3 examples only when table is empty.
-- Existing endpoints/request/response shapes stay unchanged.
-- Preserve status codes: 200, 201, 204, 400, 404.
-- Errors remain JSON.
-- All user-supplied SQL values use `?` placeholders.
-- Never concatenate/interpolate user input into SQL.
-- `tasks.db` should normally be git-ignored.
-- Do not build optional extras until required tasks pass.
+- Same repo, same Python/FastAPI lane.
+- PostgreSQL via official Docker image.
+- Use `psycopg[binary]` unless project already uses SQLModel.
+- Read `DATABASE_URL` from environment; never hardcode credentials.
+- `.env` git-ignored; `.env.example` committed.
+- Named Docker volume for DB persistence.
+- Same endpoint/request/response contracts.
+- Preserve 200/201/204/400/404.
+- Parameterized `%s` SQL only for request values.
+- Routes contain no raw SQL.
+- No optional extras before core acceptance passes.
 
 ## Change strategy
-- Inspect existing A1 implementation before editing.
-- Reuse route validation and schemas where correct.
-- Replace storage calls behind routes; avoid route rewrites.
-- Prefer 2–4 tiny DB helpers over a repository/service architecture.
-- One connection per operation or one simple well-managed connection;
-  choose the smallest reliable design for the existing app.
-- Commit writes explicitly.
-- Convert SQLite `done` 0/1 back to API boolean.
+- Inspect A2 first.
+- Reuse existing routes/validation/tests.
+- Replace SQLite repository/storage with Postgres.
+- Add only required infra: `Dockerfile`, `compose.yaml`, `.env.example`, `.dockerignore` if useful.
+- Avoid unrelated refactors.
 
 ## Engineering rules
-- KISS/YAGNI first.
-- DRY only for repeated DB lookup/row conversion/connection logic.
-- Preserve SOLID/GRASP/LoD without creating unnecessary layers.
-- No new frontend, auth, Docker, cloud, migrations framework, cache, queue, ORM.
-- No silent API contract changes.
-- No broad exception swallowing.
-- No dead code or TODO placeholders.
-
-## Workflow
-For each task:
-1. Inspect only relevant existing files.
-2. Implement smallest complete change.
-3. Run narrow test/check.
-4. Fix before continuing.
-5. Mark `TASKS.md`.
-6. Commit with the specified stage message.
+- KISS/YAGNI first; DRY only when useful.
+- Preserve SOLID/GRASP/LoD without extra layers.
+- No auth, Redis, Kubernetes, CI/CD, cloud, reverse proxy, migrations framework, or production hardening unless explicitly requested.
+- No broad exception swallowing, dead code, TODO stubs, or secret logging.
 
 ## Verification
-Always verify:
-- DB/table auto-create
-- seeding is idempotent
-- CRUD reads/writes SQLite
-- persistence after restart
-- invalid bodies still 400
-- unknown IDs still 404
-- DELETE returns 204 empty
-- old A1 endpoint tests still pass
-- no SQL contains interpolated user input
+Verify:
+- Postgres starts.
+- App connects via `DATABASE_URL`.
+- table auto-creates.
+- exactly 3 seeds on first empty DB.
+- CRUD uses Postgres.
+- persistence survives `docker compose down` then `up`.
+- `.env` is not tracked.
+- `.env.example` is tracked.
+- A1/A2 contract tests still pass.
+- SQL is parameterized.
+- API container uses DB host `db`, not `localhost`.
 
-## README update
-Add:
-- why SQLite
-- `tasks.db` location + auto-creation
-- clean-clone run command
-- persistence explanation
-- DB Browser screenshot reference
-- one Stage 4 SQL query + result/observation
+## Workflow
+For each task: inspect minimal files -> implement smallest change -> run checkpoint -> fix -> tick `TASKS.md` -> commit stage.
+
+## README
+Include project purpose, `cp .env.example .env`, `docker compose up`, env vars, endpoint table, one `curl -i`, DB screenshot/psql proof, persistence note.
 
 ## Token discipline
-- Do not restate specs.
-- Read targeted files only.
-- Patch instead of rewriting whole files.
-- Keep logs/output concise.
-- Stop when acceptance criteria pass.
+Do not restate specs. Read targeted files only. Patch instead of rewrite. Keep logs concise. Stop when acceptance passes.
 
-## Definition of done
-Same API, SQLite-backed storage, persistence proven, clean clone works,
-README updated, DB screenshot captured, and honest stage commits exist.
+## Done
+A clean clone can copy `.env.example`, run `docker compose up`, use unchanged CRUD against Postgres, restart the stack without data loss, and see the same rows directly in Postgres.

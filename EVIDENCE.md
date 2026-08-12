@@ -1,5 +1,12 @@
 # Evidence
 
+## A3 Stage 0 — PostgreSQL in Docker
+
+- `docker volume create crud-api-taskdata` created the named persistence volume.
+- `docker run ... postgres:17-alpine` started the official PostgreSQL image as `crud-api-postgres`, mounting `crud-api-taskdata` at `/var/lib/postgresql/data`.
+- `docker exec crud-api-postgres psql -U tasks_user -d tasks -c "SELECT current_database(), current_user;"` returned database `tasks` and user `tasks_user`.
+- `git check-ignore .env` confirms local credentials are excluded from Git.
+
 ## Stage 0 — SQLite initialization
 
 - `python -m pytest tests/test_db.py -q` → `2 passed in 0.06s`.

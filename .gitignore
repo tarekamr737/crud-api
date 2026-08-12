@@ -2,5 +2,6 @@ __pycache__/
 .pytest_cache/
 .venv*/
 *.py[cod]
+.env
 tasks.db
 *.db-journal
