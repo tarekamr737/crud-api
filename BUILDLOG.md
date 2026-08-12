@@ -8,6 +8,10 @@
 
 - Used a ten-attempt, one-second `psycopg.OperationalError` retry for startup ordering because `depends_on` does not imply readiness and the optional database healthcheck is explicitly deferred.
 
+## A3 Stage 5
+
+- Native PowerShell and Command Prompt capture attempts could not obtain a window handle in this environment, and the in-app browser was unavailable. Rendered the already verified `psql` command/output locally with headless Chrome, then visually inspected the resulting PNG before committing it.
+
 ## Stage 0
 
 - Kept API routes list-backed for this stage so the database initialization change remains separate from the read/write migrations scheduled in Stages 1–3.

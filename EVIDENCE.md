@@ -37,6 +37,14 @@
 - `GET http://127.0.0.1:8000/tasks` returned HTTP 200 and the three seed tasks; `psql` in the Compose DB container independently returned `task_count = 3`.
 - `python -m pytest -q` returned `16 passed in 3.17s` after the bounded startup retry and container files were added.
 
+## A3 Stage 5 — Documentation and clean clone
+
+- README now documents the FastAPI/PostgreSQL stack, `cp .env.example .env`, `docker compose up`, all four environment variables, every endpoint, a `curl -i` POST, direct `psql` inspection, and named-volume persistence.
+- Captured and visually inspected `docs/postgres-psql.png`; it clearly shows the verified direct query and all three seed rows.
+- Exported the staged Git tree into a new directory with no `.env`, copied `.env.example` to `.env`, and ran the documented `docker compose up --build -d` flow successfully.
+- The clean snapshot reported both services `Up`, `GET /tasks` returned HTTP 200 with exactly three seeds, and direct `psql` returned the identical rows.
+- Removed only the disposable clean-clone containers, network, volume, and verified temporary directory after the check passed.
+
 ## Stage 0 — SQLite initialization
 
 - `python -m pytest tests/test_db.py -q` → `2 passed in 0.06s`.
