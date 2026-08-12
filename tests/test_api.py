@@ -99,6 +99,30 @@ def test_update_delete_and_missing_behavior() -> None:
     assert client.get(f"/tasks/{task_id}").status_code == 404
 
 
+def test_api_mutations_match_database_rows() -> None:
+    created = client.post("/tasks", json={"title": "Database truth"}).json()
+
+    with sqlite3.connect(DB_PATH) as connection:
+        row = connection.execute(
+            "SELECT id, title, done FROM tasks WHERE id = ?", (created["id"],)
+        ).fetchone()
+    assert row == (created["id"], "Database truth", 0)
+
+    client.put(f"/tasks/{created['id']}", json={"done": True})
+    with sqlite3.connect(DB_PATH) as connection:
+        done = connection.execute(
+            "SELECT done FROM tasks WHERE id = ?", (created["id"],)
+        ).fetchone()[0]
+    assert done == 1
+
+    client.delete(f"/tasks/{created['id']}")
+    with sqlite3.connect(DB_PATH) as connection:
+        missing = connection.execute(
+            "SELECT id FROM tasks WHERE id = ?", (created["id"],)
+        ).fetchone()
+    assert missing is None
+
+
 def test_openapi_contains_every_endpoint() -> None:
     response = client.get("/openapi.json")
     paths = response.json()["paths"]

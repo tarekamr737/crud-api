@@ -38,3 +38,10 @@
 - Direct inspection returned exactly `[(1, 'Buy milk', 0), (2, 'Write report', 1), (3, 'Call dentist', 0)]` and columns `id INTEGER PRIMARY KEY`, `title TEXT NOT NULL`, `done INTEGER NOT NULL DEFAULT 0`.
 - `python -m pytest -q` → `14 passed in 0.55s` after the documentation changes.
 - Captured and visually checked `docs/db-browser.png`; it shows DB Browser for SQLite open on `tasks.db` with the `tasks` table and required schema.
+
+## Test — Full regression and SQL safety
+
+- `python -m pytest -q` → `15 passed in 0.58s`.
+- Added an integration test that creates, updates, and deletes through the API while checking the corresponding row directly through a separate SQLite connection after each operation.
+- Audited every `SELECT`, `INSERT`, `UPDATE`, and `DELETE` in `app/db.py`. Every request-derived ID, title, and boolean is supplied as a bound argument to a `?` placeholder; no SQL uses interpolation or concatenation.
+- Searched `app/` for list assignment/append/remove patterns and found no in-memory task collection.
