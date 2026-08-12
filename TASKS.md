@@ -7,6 +7,6 @@
 - [x] S4 Add minimal `Dockerfile` + `compose.yaml` with `api` + `db` + named volume; API uses host `db`; verify `docker compose up`; commit `Stage 4: docker-compose the whole stack`
 - [x] S5 Update README with env setup/one-command run/endpoints/curl/DB screenshot; verify clean clone; commit `Stage 5: one-command stack + docs`
 - [x] TEST Re-run A1/A2 contract tests; verify no interpolated SQL and `.env` absent from Git
-- [ ] FINAL Create tasks -> `docker compose down` -> `docker compose up` -> confirm persistence + direct Postgres rows
+- [x] FINAL Create tasks -> `docker compose down` -> `docker compose up` -> confirm persistence + direct Postgres rows
 - [ ] PUSH same public repo; confirm honest stage commits
 - [ ] OPTIONAL Only after FINAL: DB healthcheck/index/Redis/multi-stage image/mortality experiment

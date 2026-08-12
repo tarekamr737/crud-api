@@ -52,6 +52,13 @@
 - `rg` found no SQL statement in `app/main.py`, so routes remain storage-agnostic.
 - `git check-ignore -v .env` matched `.gitignore`; `git ls-files --error-unmatch .env` confirmed it is absent from Git, while `git ls-files .env.example` confirmed the template is tracked.
 
+## A3 Final — Full-stack restart persistence
+
+- Started the main Compose project on its preserved `taskdata` volume and created `Restart survivor one` (ID 4) and `Restart survivor two` (ID 5) through POST `/tasks`.
+- Ran `docker compose down` followed by `docker compose up -d`, recreating both containers and their network without deleting the named volume.
+- After restart, GET `/tasks` returned HTTP 200 with all five rows, including both new tasks under their original IDs.
+- Direct `psql` returned the same five IDs, titles, and boolean values in order; `docker compose ps` reported both recreated services `Up`.
+
 ## Stage 0 — SQLite initialization
 
 - `python -m pytest tests/test_db.py -q` → `2 passed in 0.06s`.
