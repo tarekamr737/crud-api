@@ -7,6 +7,6 @@
 - [x] S4 Open `tasks.db` in DB Browser; run required SQL; record 1 query + observation; commit `Stage 4: explored SQLite`
 - [x] S5 Update `.gitignore` + README; add DB screenshot; verify clean DB auto-creates + seeds; commit `Stage 5: database documentation`
 - [x] TEST Re-run all A1 endpoint tests + DB persistence tests; verify no request input is interpolated into SQL
-- [ ] FINAL Full CRUD -> restart -> same state; DB Browser matches API; clean clone starts with one documented command
+- [x] FINAL Full CRUD -> restart -> same state; DB Browser matches API; clean clone starts with one documented command
 - [ ] PUSH Push updated same public repo; verify honest stage commits
 - [ ] OPTIONAL Only after FINAL: search/filter/sort/stats/timestamps/index/transaction

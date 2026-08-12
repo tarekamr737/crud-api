@@ -45,3 +45,12 @@
 - Added an integration test that creates, updates, and deletes through the API while checking the corresponding row directly through a separate SQLite connection after each operation.
 - Audited every `SELECT`, `INSERT`, `UPDATE`, and `DELETE` in `app/db.py`. Every request-derived ID, title, and boolean is supplied as a bound argument to a `?` placeholder; no SQL uses interpolation or concatenation.
 - Searched `app/` for list assignment/append/remove patterns and found no in-memory task collection.
+
+## Final — Clean clone, restart, and database agreement
+
+- Cloned the committed repository into a new temporary directory and confirmed it contained no `tasks.db`.
+- Started it with the README's exact `python -m uvicorn app.main:app --reload` command; health passed and the newly created database contained 3 seeds.
+- POST created `{"id":4,"title":"Restart survivor","done":false}`, PUT changed `done` to true, and DELETE of task 1 returned 204.
+- Before and after a complete server stop/restart, GET `/tasks` returned the identical state: tasks 2, 3, and 4 with task 4 still done.
+- DB Browser ran `docs/final-verify.sql` against that clone with exit code 0. A separate SQLite connection returned `[[2, "Write report", 1], [3, "Call dentist", 0], [4, "Restart survivor", 1]]`, exactly matching the API after boolean conversion.
+- Stopped both server process trees and removed the validated temporary clone.
