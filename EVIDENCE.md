@@ -24,3 +24,10 @@
 - The database test updates task 1, deletes task 2, reinitializes the database to simulate a restart, and proves the updated row remains while the deleted row remains absent.
 - The unchanged A1 endpoint assertions prove invalid PUT bodies return JSON 400, unknown IDs return JSON 404, and successful DELETE returns 204 with an empty body.
 - UPDATE binds title, boolean, and ID through `?` placeholders; DELETE binds its ID through a `?` placeholder. The application no longer contains an in-memory task list.
+
+## Stage 4 — SQLite exploration
+
+- Installed DB Browser for SQLite 3.13.1 and opened the repository-root `tasks.db` with `docs/stage4.sql`.
+- Ran all five required statements. `SELECT COUNT(*) FROM tasks;` returned 3 before the destructive statements: the three seeded tasks.
+- After `UPDATE tasks SET done = 1;` followed by `DELETE FROM tasks WHERE done = 1;`, an independent SQLite connection reported `after_required_sql_count=0`, proving DB Browser executed the changes.
+- Restored the validated pre-exploration backup; a fresh connection returned `[(1, 'Buy milk', 0), (2, 'Write report', 1), (3, 'Call dentist', 0)]`.

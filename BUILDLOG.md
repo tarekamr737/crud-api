@@ -8,3 +8,8 @@
 ## Stage 1
 
 - The first focused test collection failed because Pydantic on Python 3.11 rejects `typing.TypedDict`; switched the moved `Task` type to `typing_extensions.TypedDict`, matching the A1 implementation.
+
+## Stage 4
+
+- DB Browser's Windows CLI exited successfully but did not apply the SQL file, including after process synchronization and explicit transaction attempts. Switched to its visible Execute SQL workflow and retained the exact required statements in `docs/stage4.sql`.
+- An initial global-keystroke GUI attempt targeted Chrome instead of DB Browser and opened a reload confirmation; canceled it without confirming or submitting anything. Replaced global input with DB Browser's `--sql` launch plus window-handle-specific capture.
