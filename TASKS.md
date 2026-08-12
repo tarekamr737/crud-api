@@ -12,9 +12,9 @@
 - [x] Verify JWT using Supabase `get_user(token)`.
 - [x] Add `/protected/profile` → 200; bad/missing token → 401.
 - [x] Add second protected route using same dependency.
-- [ ] Add protected logout → 204.
-- [ ] Verify Swagger `/docs` Authorize + protected-route locks.
-- [ ] Test valid, missing, malformed, expired/tampered token flows.
+- [x] Add protected logout → 204.
+- [x] Verify Swagger `/docs` Authorize + protected-route locks.
+- [x] Test valid, missing, malformed, expired/tampered token flows.
 - [ ] Run regression checks for existing CRUD API.
 - [ ] Confirm `.env` and secrets never entered git history.
 - [ ] Update README: setup, env, run, endpoints, auth, Swagger screenshot.

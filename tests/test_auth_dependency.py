@@ -2,6 +2,7 @@ import os
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 from supabase_auth.errors import AuthApiError
@@ -58,12 +59,13 @@ def test_dependency_rejects_missing_and_malformed_authorization() -> None:
     get_user.assert_not_called()
 
 
-def test_dependency_rejects_invalid_or_expired_token() -> None:
+@pytest.mark.parametrize("token", ["expired-token", "tampered-token"])
+def test_dependency_rejects_invalid_or_expired_token(token: str) -> None:
     error = AuthApiError("provider JWT detail", 401, None)
     with patch("app.auth.supabase.auth.get_user", side_effect=error):
         response = client.get(
             "/protected",
-            headers={"Authorization": "Bearer tampered-token"},
+            headers={"Authorization": f"Bearer {token}"},
         )
 
     assert response.status_code == 401

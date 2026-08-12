@@ -12,6 +12,10 @@
 
 - FastAPI rejected the initial success-dictionary/`JSONResponse` union as an inferred response model. Set `response_model=None` on auth routes so each route can intentionally return either its success payload or normalized JSON error without changing runtime behavior.
 
+## A4 Stage 3
+
+- Supabase's ordinary `sign_out()` relies on mutable client session state, which is unsuitable for a shared server singleton. Logout therefore uses the SDK's token-explicit logout call with the already verified user JWT; the client remains configured with the anon/publishable key, never `service_role`.
+
 ## A3 Stage 0
 
 - Used a temporary standalone PostgreSQL container for the database-only checkpoints in Stages 0–3; the required two-service Compose definition remains isolated to Stage 4.

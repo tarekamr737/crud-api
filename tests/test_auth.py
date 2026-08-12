@@ -157,3 +157,51 @@ def test_login_normalizes_invalid_credentials() -> None:
     assert response.status_code == 401
     assert response.json() == {"error": "Invalid email or password"}
     assert "provider" not in response.text
+
+
+def test_logout_verifies_then_signs_out_the_bearer_token() -> None:
+    user = SimpleNamespace(id="user-123")
+    with (
+        patch(
+            "app.auth.supabase.auth.get_user",
+            return_value=SimpleNamespace(user=user),
+        ) as get_user,
+        patch("app.main.supabase.auth.admin.sign_out") as sign_out,
+    ):
+        response = client.post(
+            "/auth/logout",
+            headers={"Authorization": "Bearer valid-token"},
+        )
+
+    assert response.status_code == 204
+    assert response.content == b""
+    get_user.assert_called_once_with("valid-token")
+    sign_out.assert_called_once_with("valid-token")
+
+
+def test_logout_rejects_missing_token_before_supabase_signout() -> None:
+    with patch("app.main.supabase.auth.admin.sign_out") as sign_out:
+        response = client.post("/auth/logout")
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Invalid or expired authentication token"}
+    sign_out.assert_not_called()
+
+
+def test_openapi_exposes_bearer_authorize_for_protected_routes_only() -> None:
+    schema = client.get("/openapi.json").json()
+
+    assert schema["components"]["securitySchemes"]["HTTPBearer"] == {
+        "type": "http",
+        "scheme": "bearer",
+    }
+    for path, method in (
+        ("/protected/profile", "get"),
+        ("/protected/dashboard", "get"),
+        ("/auth/logout", "post"),
+    ):
+        assert schema["paths"][path][method]["security"] == [{"HTTPBearer": []}]
+
+    assert "security" not in schema["paths"]["/public/info"]["get"]
+    assert "security" not in schema["paths"]["/auth/signup"]["post"]
+    assert "security" not in schema["paths"]["/auth/login"]["post"]

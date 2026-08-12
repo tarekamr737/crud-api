@@ -29,6 +29,13 @@
 - A valid token is passed unchanged to `supabase.auth.get_user(token)`; the verified user then reaches both `/protected/profile` and `/protected/dashboard` through the same dependency.
 - Profile output is limited to `id`, `email`, and `created_at`; the dashboard exposes only a message and verified user ID.
 
+## A4 Stage 3 — Logout and Swagger Bearer auth
+
+- `.venv\Scripts\python.exe -m pytest tests\test_auth.py tests\test_auth_dependency.py -q` returned `17 passed`.
+- Logout first verifies the user with `get_user(token)`, then passes the same explicit user JWT to Supabase logout and returns HTTP 204 with an empty body; a missing token returns 401 before logout is called.
+- Token cases explicitly cover valid, missing, Basic/non-Bearer, empty Bearer, whitespace-malformed, expired, and tampered values.
+- The generated OpenAPI schema defines `HTTPBearer` as an HTTP bearer scheme, attaches it to both protected reads and logout, and leaves public info, signup, and login unlocked.
+
 ## A3 Stage 0 — PostgreSQL in Docker
 
 - `docker volume create crud-api-taskdata` created the named persistence volume.

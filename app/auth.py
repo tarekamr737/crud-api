@@ -32,9 +32,9 @@ def unauthorized() -> HTTPException:
     )
 
 
-def get_current_user(
+def get_access_token(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
-) -> User:
+) -> str:
     if (
         credentials is None
         or credentials.scheme.lower() != "bearer"
@@ -42,9 +42,12 @@ def get_current_user(
         or any(character.isspace() for character in credentials.credentials)
     ):
         raise unauthorized()
+    return credentials.credentials
 
+
+def get_current_user(token: str = Depends(get_access_token)) -> User:
     try:
-        response = supabase.auth.get_user(credentials.credentials)
+        response = supabase.auth.get_user(token)
     except AuthError:
         raise unauthorized() from None
 

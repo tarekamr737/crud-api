@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator, model_validator
 from supabase_auth.errors import AuthError
 
-from app.auth import get_current_user, supabase
+from app.auth import get_access_token, get_current_user, supabase, unauthorized
 from app.repository import (
     Task,
     create_task as create_task_record,
@@ -169,6 +169,24 @@ def login(payload: AuthCredentials) -> dict[str, str] | JSONResponse:
         "access_token": response.session.access_token,
         "refresh_token": response.session.refresh_token,
     }
+
+
+@app.post(
+    "/auth/logout",
+    status_code=204,
+    response_class=Response,
+    summary="Log out",
+)
+def logout(
+    current_user: User = Depends(get_current_user),
+    access_token: str = Depends(get_access_token),
+) -> Response:
+    del current_user
+    try:
+        supabase.auth.admin.sign_out(access_token)
+    except AuthError:
+        raise unauthorized() from None
+    return Response(status_code=204)
 
 
 @app.get("/tasks", summary="List tasks")
