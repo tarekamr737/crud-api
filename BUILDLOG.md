@@ -20,6 +20,11 @@
 
 - The first full regression run reached PostgreSQL during its one-time container initialization and exhausted the application's startup retries just before the server became ready. After the existing container reported `database system is ready to accept connections`, the unchanged suite passed in full.
 
+## A4 Stage 5
+
+- The in-app browser runtime reported no available browser while the locally running `/docs` endpoint returned HTTP 200. Kept the existing screenshot unchanged instead of fabricating a current auth-enabled capture; the README screenshot checklist remains open until a real browser capture is possible.
+- The first cleanup filter matched the PowerShell command text that contained the Uvicorn arguments and interrupted its own shell after stopping the API. A narrower retry removed the exact disposable `a4-regression-postgres` container and verified workspace `.tmp` directory; no project data was removed.
+
 ## A3 Stage 0
 
 - Used a temporary standalone PostgreSQL container for the database-only checkpoints in Stages 0–3; the required two-service Compose definition remains isolated to Stage 4.
