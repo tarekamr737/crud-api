@@ -15,6 +15,12 @@
 - `python -m pytest -q` with the PostgreSQL URL set returned `15 passed in 0.78s`, preserving the existing contract during this staged initialization change.
 - `.env` contains the local host URL and is ignored; committed `.env.example` contains the Compose service host `db`.
 
+## A3 Stage 2 — PostgreSQL reads
+
+- `python -m pytest tests/test_api.py::test_read_tasks_and_missing_task -q` with the PostgreSQL URL set returned `1 passed in 0.62s`.
+- The unchanged endpoint assertions received the three PostgreSQL seed rows with HTTP 200, received task 2 by ID with HTTP 200, and retained the JSON HTTP 404 response for ID 99.
+- `app/repository.py` binds the route ID with `WHERE id = %s` and `(task_id,)`; routes contain no SQL.
+
 ## Stage 0 — SQLite initialization
 
 - `python -m pytest tests/test_db.py -q` → `2 passed in 0.06s`.

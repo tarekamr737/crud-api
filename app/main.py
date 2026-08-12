@@ -3,14 +3,16 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator, model_validator
 from app.db import (
-    Task,
     delete_task_record,
-    fetch_task,
-    fetch_tasks,
     insert_task,
     update_task_record,
 )
-from app.repository import init_db
+from app.repository import (
+    Task,
+    get_task as get_task_record,
+    init_db,
+    list_tasks as list_task_records,
+)
 
 
 app = FastAPI(
@@ -75,12 +77,12 @@ def health() -> dict[str, str]:
 
 @app.get("/tasks", summary="List tasks")
 def list_tasks() -> list[Task]:
-    return fetch_tasks()
+    return list_task_records()
 
 
 @app.get("/tasks/{task_id}", response_model=None, summary="Get a task")
 def get_task(task_id: int) -> Task | JSONResponse:
-    task = fetch_task(task_id)
+    task = get_task_record(task_id)
     if task is None:
         return task_not_found(task_id)
     return task

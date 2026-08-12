@@ -1,6 +1,7 @@
 import os
 
 import psycopg
+from typing_extensions import TypedDict
 
 
 DATABASE_URL = os.environ["DATABASE_URL"]
@@ -9,6 +10,12 @@ SEED_TASKS = (
     ("Write report", True),
     ("Call dentist", False),
 )
+
+
+class Task(TypedDict):
+    id: int
+    title: str
+    done: bool
 
 
 def connect() -> psycopg.Connection:
@@ -33,3 +40,25 @@ def init_db() -> None:
                     "INSERT INTO tasks (title, done) VALUES (%s, %s)",
                     SEED_TASKS,
                 )
+
+
+def row_to_task(row: tuple[int, str, bool]) -> Task:
+    return {"id": row[0], "title": row[1], "done": row[2]}
+
+
+def list_tasks() -> list[Task]:
+    with connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id, title, done FROM tasks ORDER BY id")
+            rows = cursor.fetchall()
+    return [row_to_task(row) for row in rows]
+
+
+def get_task(task_id: int) -> Task | None:
+    with connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, title, done FROM tasks WHERE id = %s", (task_id,)
+            )
+            row = cursor.fetchone()
+    return row_to_task(row) if row is not None else None
