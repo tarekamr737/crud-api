@@ -8,6 +8,10 @@
 
 - Disabled Supabase client session persistence and automatic refresh because the singleton is server infrastructure shared across requests; authentication will use each request's explicit Bearer token instead of mutable client session state.
 
+## A4 Stage 1
+
+- FastAPI rejected the initial success-dictionary/`JSONResponse` union as an inferred response model. Set `response_model=None` on auth routes so each route can intentionally return either its success payload or normalized JSON error without changing runtime behavior.
+
 ## A3 Stage 0
 
 - Used a temporary standalone PostgreSQL container for the database-only checkpoints in Stages 0–3; the required two-service Compose definition remains isolated to Stage 4.

@@ -14,6 +14,13 @@
 - A focused configuration check created the client from only those two variables and returned `configured`; a clean process without them returned the stable startup error `Missing required environment variable: SUPABASE_URL`.
 - `git check-ignore -v .env` matched `.gitignore`, `git ls-files .env.example` found the template, and `git ls-files --error-unmatch .env` confirmed the real file is untracked.
 
+## A4 Stage 1 — Signup and login
+
+- `.venv\Scripts\python.exe -m pytest tests\test_auth.py -q` returned `6 passed`.
+- Signup tests prove HTTP 201 returns only `id`, `email`, and `created_at`; missing/blank fields and provider failures return stable JSON 400 responses without provider details.
+- Login tests prove HTTP 200 returns access and refresh tokens; missing/blank fields return JSON 400 and rejected credentials return stable JSON 401 without provider details.
+- The request model passes passwords directly to Supabase and no application code stores, hashes, signs, or logs credentials or tokens.
+
 ## A3 Stage 0 — PostgreSQL in Docker
 
 - `docker volume create crud-api-taskdata` created the named persistence volume.

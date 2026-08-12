@@ -2,6 +2,9 @@ from fastapi import FastAPI, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator, model_validator
+from supabase_auth.errors import AuthError
+
+from app.auth import supabase
 from app.repository import (
     Task,
     create_task as create_task_record,
@@ -30,6 +33,18 @@ class TaskCreate(BaseModel):
     def title_must_not_be_empty(cls, value: str) -> str:
         if not value.strip():
             raise ValueError("title must not be empty")
+        return value
+
+
+class AuthCredentials(BaseModel):
+    email: str
+    password: str
+
+    @field_validator("email", "password")
+    @classmethod
+    def field_must_not_be_empty(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("field must not be empty")
         return value
 
 
@@ -71,6 +86,62 @@ def read_root() -> dict[str, str | list[str]]:
 @app.get("/health", summary="Check API health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.post(
+    "/auth/signup",
+    status_code=201,
+    response_model=None,
+    summary="Create an account",
+)
+def signup(payload: AuthCredentials) -> dict[str, str | None] | JSONResponse:
+    try:
+        response = supabase.auth.sign_up(
+            {"email": payload.email.strip(), "password": payload.password}
+        )
+    except AuthError:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Unable to create account"},
+        )
+
+    if response.user is None:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Unable to create account"},
+        )
+    return {
+        "id": str(response.user.id),
+        "email": response.user.email,
+        "created_at": str(response.user.created_at),
+    }
+
+
+@app.post(
+    "/auth/login",
+    response_model=None,
+    summary="Log in",
+)
+def login(payload: AuthCredentials) -> dict[str, str] | JSONResponse:
+    try:
+        response = supabase.auth.sign_in_with_password(
+            {"email": payload.email.strip(), "password": payload.password}
+        )
+    except AuthError:
+        return JSONResponse(
+            status_code=401,
+            content={"error": "Invalid email or password"},
+        )
+
+    if response.session is None:
+        return JSONResponse(
+            status_code=401,
+            content={"error": "Invalid email or password"},
+        )
+    return {
+        "access_token": response.session.access_token,
+        "refresh_token": response.session.refresh_token,
+    }
 
 
 @app.get("/tasks", summary="List tasks")

@@ -5,8 +5,8 @@
 - [x] Inspect existing FastAPI app; preserve CRUD/database behavior.
 - [x] Add Supabase dependency + `.env.example`; ensure `.env` is ignored.
 - [x] Configure Supabase client using URL + anon key only.
-- [ ] Add signup → 201/400.
-- [ ] Add login → 200 tokens / 400 / 401.
+- [x] Add signup → 201/400.
+- [x] Add login → 200 tokens / 400 / 401.
 - [ ] Add `/public/info` → 200.
 - [ ] Add reusable `HTTPBearer` + `get_current_user`.
 - [ ] Verify JWT using Supabase `get_user(token)`.
