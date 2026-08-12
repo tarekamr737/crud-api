@@ -1,6 +1,12 @@
 import sqlite3
 
-from app.db import SEED_TASKS, fetch_task, fetch_tasks, initialize_database
+from app.db import (
+    SEED_TASKS,
+    fetch_task,
+    fetch_tasks,
+    initialize_database,
+    insert_task,
+)
 
 
 def test_initialize_creates_database_table_and_three_seed_rows(tmp_path) -> None:
@@ -53,3 +59,14 @@ def test_fetch_tasks_reads_current_database_state(tmp_path) -> None:
         "done": True,
     }
     assert fetch_task(99, db_path) is None
+
+
+def test_insert_task_uses_sqlite_id_and_persists(tmp_path) -> None:
+    db_path = tmp_path / "tasks.db"
+    initialize_database(db_path)
+
+    created = insert_task("Ship API", db_path)
+    initialize_database(db_path)
+
+    assert created == {"id": 4, "title": "Ship API", "done": False}
+    assert fetch_task(4, db_path) == created

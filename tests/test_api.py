@@ -1,9 +1,11 @@
 from copy import deepcopy
+import sqlite3
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app, tasks
+from app.db import DB_PATH
 
 
 SEED_TASKS = [
@@ -18,6 +20,13 @@ client = TestClient(app)
 @pytest.fixture(autouse=True)
 def reset_tasks() -> None:
     tasks[:] = deepcopy(SEED_TASKS)
+    with sqlite3.connect(DB_PATH) as connection:
+        connection.execute("DELETE FROM tasks")
+        connection.executemany(
+            "INSERT INTO tasks (id, title, done) VALUES (?, ?, ?)",
+            [(task["id"], task["title"], int(task["done"])) for task in SEED_TASKS],
+        )
+        connection.commit()
 
 
 def test_root_and_health() -> None:

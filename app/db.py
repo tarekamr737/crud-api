@@ -60,3 +60,16 @@ def fetch_task(task_id: int, db_path: Path = DB_PATH) -> Task | None:
             "SELECT id, title, done FROM tasks WHERE id = ?", (task_id,)
         ).fetchone()
     return row_to_task(row) if row is not None else None
+
+
+def insert_task(title: str, db_path: Path = DB_PATH) -> Task:
+    with get_connection(db_path) as connection:
+        cursor = connection.execute(
+            "INSERT INTO tasks (title, done) VALUES (?, ?)", (title, 0)
+        )
+        task_id = cursor.lastrowid
+        row = connection.execute(
+            "SELECT id, title, done FROM tasks WHERE id = ?", (task_id,)
+        ).fetchone()
+        connection.commit()
+    return row_to_task(row)
