@@ -36,6 +36,13 @@
 - Token cases explicitly cover valid, missing, Basic/non-Bearer, empty Bearer, whitespace-malformed, expired, and tampered values.
 - The generated OpenAPI schema defines `HTTPBearer` as an HTTP bearer scheme, attaches it to both protected reads and logout, and leaves public info, signup, and login unlocked.
 
+## A4 Stage 4 — CRUD regression and secret audit
+
+- Started the already-installed PostgreSQL 17 image with its temporary data directory bind-mounted under `D:\FlyRank Intern\Connecting CRUD to the database\.tmp\a4-pgdata`; no database files were placed on `C:`.
+- `.venv\Scripts\python.exe -m pytest -q` against the ready PostgreSQL instance returned `33 passed`, covering all existing CRUD/database behavior plus the new authentication tests.
+- Git audit returned `env_tracked=False` and `env_in_history=False`; `.gitignore` remains the matching ignore rule for `.env`.
+- The local `.env` currently contains no Supabase values, no local Supabase value was found in history, and `rg` found no `service_role` or hard-coded `SUPABASE_KEY` assignment in `app/` or `tests/`.
+
 ## A3 Stage 0 — PostgreSQL in Docker
 
 - `docker volume create crud-api-taskdata` created the named persistence volume.

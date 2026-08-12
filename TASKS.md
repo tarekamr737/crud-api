@@ -15,8 +15,8 @@
 - [x] Add protected logout → 204.
 - [x] Verify Swagger `/docs` Authorize + protected-route locks.
 - [x] Test valid, missing, malformed, expired/tampered token flows.
-- [ ] Run regression checks for existing CRUD API.
-- [ ] Confirm `.env` and secrets never entered git history.
+- [x] Run regression checks for existing CRUD API.
+- [x] Confirm `.env` and secrets never entered git history.
 - [ ] Update README: setup, env, run, endpoints, auth, Swagger screenshot.
 - [ ] Run final end-to-end signup → login → protected → tampered-token test.
 - [ ] Ensure ≥6 meaningful stage commits and push.

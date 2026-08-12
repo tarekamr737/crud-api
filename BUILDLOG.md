@@ -16,6 +16,10 @@
 
 - Supabase's ordinary `sign_out()` relies on mutable client session state, which is unsuitable for a shared server singleton. Logout therefore uses the SDK's token-explicit logout call with the already verified user JWT; the client remains configured with the anon/publishable key, never `service_role`.
 
+## A4 Stage 4
+
+- The first full regression run reached PostgreSQL during its one-time container initialization and exhausted the application's startup retries just before the server became ready. After the existing container reported `database system is ready to accept connections`, the unchanged suite passed in full.
+
 ## A3 Stage 0
 
 - Used a temporary standalone PostgreSQL container for the database-only checkpoints in Stages 0–3; the required two-service Compose definition remains isolated to Stage 4.
