@@ -1,5 +1,19 @@
 # Evidence
 
+## A4 Baseline — Existing CRUD inspection
+
+- `app/main.py` exposes the existing `/`, `/health`, `/tasks`, and `/tasks/{task_id}` contracts and delegates all persistence to `app/repository.py`.
+- `app/repository.py` remains the sole PostgreSQL layer and uses bound `%s` parameters for request-derived values.
+- The existing suite contains 16 CRUD/database regression tests covering validation, status codes, persistence, and OpenAPI paths.
+- `.env` is ignored by `.gitignore` and absent from `git ls-files`; `.env.example` is tracked.
+
+## A4 Stage 0 — Supabase client setup
+
+- Installed and imported `supabase` 2.31.0 from the repository-local `.venv` on `D:`; `requirements.txt` bounds the supported major version to `<3.0`.
+- `.env.example` now includes placeholder `SUPABASE_URL` and `SUPABASE_KEY` values while preserving the runnable PostgreSQL settings.
+- A focused configuration check created the client from only those two variables and returned `configured`; a clean process without them returned the stable startup error `Missing required environment variable: SUPABASE_URL`.
+- `git check-ignore -v .env` matched `.gitignore`, `git ls-files .env.example` found the template, and `git ls-files --error-unmatch .env` confirmed the real file is untracked.
+
 ## A3 Stage 0 — PostgreSQL in Docker
 
 - `docker volume create crud-api-taskdata` created the named persistence volume.

@@ -1,5 +1,13 @@
 # Build Log
 
+## A4 Baseline
+
+- The repository `.venv` did not contain pytest, while system Python had pytest 8.4.2. A system-Python baseline run then stalled because PostgreSQL was unreachable and Docker API access was denied in the sandbox; it was terminated without modifying project state. Source inspection established the CRUD contract for later regression checks.
+
+## A4 Stage 0
+
+- Disabled Supabase client session persistence and automatic refresh because the singleton is server infrastructure shared across requests; authentication will use each request's explicit Bearer token instead of mutable client session state.
+
 ## A3 Stage 0
 
 - Used a temporary standalone PostgreSQL container for the database-only checkpoints in Stages 0–3; the required two-service Compose definition remains isolated to Stage 4.

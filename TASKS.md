@@ -1,12 +1,22 @@
 # TASKS.md
 
-- [x] S0 Inspect A2; add `.gitignore`; run Postgres container + named volume; verify `psql`; commit `Stage 0: Postgres in Docker + gitignore`
-- [x] S1 Add `.env`/`.env.example`; install psycopg; swap SQLite repository for Postgres connection/schema/seed-once; verify 3 rows after 3 restarts; commit `Stage 1: connect via .env and create table`
-- [x] S2 Move GET storage to parameterized Postgres SELECTs; preserve 200/404; commit `Stage 2: read from Postgres`
-- [x] S3 Move POST/PUT/DELETE to parameterized Postgres SQL; preserve 201/200/204/400/404; commit `Stage 3: full CRUD on Postgres`
-- [x] S4 Add minimal `Dockerfile` + `compose.yaml` with `api` + `db` + named volume; API uses host `db`; verify `docker compose up`; commit `Stage 4: docker-compose the whole stack`
-- [x] S5 Update README with env setup/one-command run/endpoints/curl/DB screenshot; verify clean clone; commit `Stage 5: one-command stack + docs`
-- [x] TEST Re-run A1/A2 contract tests; verify no interpolated SQL and `.env` absent from Git
-- [x] FINAL Create tasks -> `docker compose down` -> `docker compose up` -> confirm persistence + direct Postgres rows
-- [x] PUSH same public repo; confirm honest stage commits
-- [ ] OPTIONAL Only after FINAL: DB healthcheck/index/Redis/multi-stage image/mortality experiment
+## A4 — Auth · Login & Protect
+
+- [x] Inspect existing FastAPI app; preserve CRUD/database behavior.
+- [x] Add Supabase dependency + `.env.example`; ensure `.env` is ignored.
+- [x] Configure Supabase client using URL + anon key only.
+- [ ] Add signup → 201/400.
+- [ ] Add login → 200 tokens / 400 / 401.
+- [ ] Add `/public/info` → 200.
+- [ ] Add reusable `HTTPBearer` + `get_current_user`.
+- [ ] Verify JWT using Supabase `get_user(token)`.
+- [ ] Add `/protected/profile` → 200; bad/missing token → 401.
+- [ ] Add second protected route using same dependency.
+- [ ] Add protected logout → 204.
+- [ ] Verify Swagger `/docs` Authorize + protected-route locks.
+- [ ] Test valid, missing, malformed, expired/tampered token flows.
+- [ ] Run regression checks for existing CRUD API.
+- [ ] Confirm `.env` and secrets never entered git history.
+- [ ] Update README: setup, env, run, endpoints, auth, Swagger screenshot.
+- [ ] Run final end-to-end signup → login → protected → tampered-token test.
+- [ ] Ensure ≥6 meaningful stage commits and push.
