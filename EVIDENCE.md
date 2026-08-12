@@ -45,6 +45,13 @@
 - The clean snapshot reported both services `Up`, `GET /tasks` returned HTTP 200 with exactly three seeds, and direct `psql` returned the identical rows.
 - Removed only the disposable clean-clone containers, network, volume, and verified temporary directory after the check passed.
 
+## A3 Test — Contract, SQL safety, and secrets
+
+- `python -m pytest -q` against PostgreSQL returned `16 passed in 2.66s`, covering all A1/A2 endpoint behavior plus schema, idempotent seed, persistence, and direct database agreement.
+- Enumerated every `execute`/`executemany` call in `app/repository.py`; an AST check returned `interpolated_sql_calls=[]`, proving no SQL argument is an f-string or concatenated expression.
+- `rg` found no SQL statement in `app/main.py`, so routes remain storage-agnostic.
+- `git check-ignore -v .env` matched `.gitignore`; `git ls-files --error-unmatch .env` confirmed it is absent from Git, while `git ls-files .env.example` confirmed the template is tracked.
+
 ## Stage 0 — SQLite initialization
 
 - `python -m pytest tests/test_db.py -q` → `2 passed in 0.06s`.
