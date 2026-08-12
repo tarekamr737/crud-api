@@ -2,7 +2,15 @@ from fastapi import FastAPI, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator, model_validator
-from app.db import Task, fetch_task, fetch_tasks, initialize_database, insert_task
+from app.db import (
+    Task,
+    delete_task_record,
+    fetch_task,
+    fetch_tasks,
+    initialize_database,
+    insert_task,
+    update_task_record,
+)
 
 
 app = FastAPI(
@@ -41,17 +49,6 @@ class TaskUpdate(BaseModel):
         if self.title is None and self.done is None:
             raise ValueError("at least one field is required")
         return self
-
-
-tasks: list[Task] = [
-    {"id": 1, "title": "Buy milk", "done": False},
-    {"id": 2, "title": "Write report", "done": True},
-    {"id": 3, "title": "Call dentist", "done": False},
-]
-
-
-def find_task(task_id: int) -> Task | None:
-    return next((task for task in tasks if task["id"] == task_id), None)
 
 
 def task_not_found(task_id: int) -> JSONResponse:
@@ -96,13 +93,9 @@ def create_task(payload: TaskCreate) -> Task:
 
 @app.put("/tasks/{task_id}", response_model=None, summary="Update a task")
 def update_task(task_id: int, payload: TaskUpdate) -> Task | JSONResponse:
-    task = find_task(task_id)
+    task = update_task_record(task_id, payload.title, payload.done)
     if task is None:
         return task_not_found(task_id)
-    if payload.title is not None:
-        task["title"] = payload.title
-    if payload.done is not None:
-        task["done"] = payload.done
     return task
 
 
@@ -113,8 +106,6 @@ def update_task(task_id: int, payload: TaskUpdate) -> Task | JSONResponse:
     summary="Delete a task",
 )
 def delete_task(task_id: int) -> Response:
-    task = find_task(task_id)
-    if task is None:
+    if not delete_task_record(task_id):
         return task_not_found(task_id)
-    tasks.remove(task)
     return Response(status_code=204)

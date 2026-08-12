@@ -1,10 +1,9 @@
-from copy import deepcopy
 import sqlite3
 
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app, tasks
+from app.main import app
 from app.db import DB_PATH
 
 
@@ -19,7 +18,6 @@ client = TestClient(app)
 
 @pytest.fixture(autouse=True)
 def reset_tasks() -> None:
-    tasks[:] = deepcopy(SEED_TASKS)
     with sqlite3.connect(DB_PATH) as connection:
         connection.execute("DELETE FROM tasks")
         connection.executemany(

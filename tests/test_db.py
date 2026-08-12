@@ -2,10 +2,12 @@ import sqlite3
 
 from app.db import (
     SEED_TASKS,
+    delete_task_record,
     fetch_task,
     fetch_tasks,
     initialize_database,
     insert_task,
+    update_task_record,
 )
 
 
@@ -70,3 +72,18 @@ def test_insert_task_uses_sqlite_id_and_persists(tmp_path) -> None:
 
     assert created == {"id": 4, "title": "Ship API", "done": False}
     assert fetch_task(4, db_path) == created
+
+
+def test_update_and_delete_persist_after_reinitialization(tmp_path) -> None:
+    db_path = tmp_path / "tasks.db"
+    initialize_database(db_path)
+
+    updated = update_task_record(1, "Buy oat milk", True, db_path)
+    assert updated == {"id": 1, "title": "Buy oat milk", "done": True}
+    assert update_task_record(99, None, True, db_path) is None
+    assert delete_task_record(2, db_path) is True
+    assert delete_task_record(99, db_path) is False
+
+    initialize_database(db_path)
+    assert fetch_task(1, db_path) == updated
+    assert fetch_task(2, db_path) is None

@@ -17,3 +17,10 @@
 - `python -m pytest tests/test_db.py tests/test_api.py::test_create_rejects_invalid_bodies tests/test_api.py::test_create_assigns_next_id_and_updates_state -q` → `9 passed in 0.55s`.
 - The focused persistence test inserts `Ship API`, reinitializes the database to simulate a restart, then reads ID 4 from a fresh connection and gets the same task.
 - POST continues to return 201, invalid bodies return the unchanged JSON 400, and both the title and generated ID are handled through parameterized SQL/SQLite `lastrowid`.
+
+## Stage 3 — Database updates and deletes
+
+- `python -m pytest -q` → `14 passed in 0.66s`.
+- The database test updates task 1, deletes task 2, reinitializes the database to simulate a restart, and proves the updated row remains while the deleted row remains absent.
+- The unchanged A1 endpoint assertions prove invalid PUT bodies return JSON 400, unknown IDs return JSON 404, and successful DELETE returns 204 with an empty body.
+- UPDATE binds title, boolean, and ID through `?` placeholders; DELETE binds its ID through a `?` placeholder. The application no longer contains an in-memory task list.

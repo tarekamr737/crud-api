@@ -73,3 +73,31 @@ def insert_task(title: str, db_path: Path = DB_PATH) -> Task:
         ).fetchone()
         connection.commit()
     return row_to_task(row)
+
+
+def update_task_record(
+    task_id: int,
+    title: str | None,
+    done: bool | None,
+    db_path: Path = DB_PATH,
+) -> Task | None:
+    current = fetch_task(task_id, db_path)
+    if current is None:
+        return None
+
+    updated_title = title if title is not None else current["title"]
+    updated_done = done if done is not None else current["done"]
+    with get_connection(db_path) as connection:
+        connection.execute(
+            "UPDATE tasks SET title = ?, done = ? WHERE id = ?",
+            (updated_title, int(updated_done), task_id),
+        )
+        connection.commit()
+    return fetch_task(task_id, db_path)
+
+
+def delete_task_record(task_id: int, db_path: Path = DB_PATH) -> bool:
+    with get_connection(db_path) as connection:
+        cursor = connection.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+        connection.commit()
+    return cursor.rowcount > 0
