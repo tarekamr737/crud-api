@@ -29,6 +29,14 @@
 - The API/database integration test verifies created, updated, and deleted state through a separate PostgreSQL connection after each HTTP mutation.
 - A source audit found no SQLite import or route SQL. Every request-derived title, boolean, and ID is passed separately to a `%s` placeholder in `app/repository.py`.
 
+## A3 Stage 4 — Full Compose stack
+
+- `docker compose config` resolved exactly two services, `api` and `db`, and the API URL to `postgresql://tasks_user:tasks_password@db:5432/tasks`.
+- `docker compose up --build -d` built the minimal Python image, started both containers, and created the named `connectingcrudtothedatabase_taskdata` volume.
+- `docker compose ps` reported both services `Up`; direct inspection inside the API container confirmed its database host is `db`.
+- `GET http://127.0.0.1:8000/tasks` returned HTTP 200 and the three seed tasks; `psql` in the Compose DB container independently returned `task_count = 3`.
+- `python -m pytest -q` returned `16 passed in 3.17s` after the bounded startup retry and container files were added.
+
 ## Stage 0 — SQLite initialization
 
 - `python -m pytest tests/test_db.py -q` → `2 passed in 0.06s`.

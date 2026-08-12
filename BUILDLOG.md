@@ -4,6 +4,10 @@
 
 - Used a temporary standalone PostgreSQL container for the database-only checkpoints in Stages 0–3; the required two-service Compose definition remains isolated to Stage 4.
 
+## A3 Stage 4
+
+- Used a ten-attempt, one-second `psycopg.OperationalError` retry for startup ordering because `depends_on` does not imply readiness and the optional database healthcheck is explicitly deferred.
+
 ## Stage 0
 
 - Kept API routes list-backed for this stage so the database initialization change remains separate from the read/write migrations scheduled in Stages 1–3.
