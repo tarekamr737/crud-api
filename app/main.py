@@ -2,9 +2,7 @@ from fastapi import FastAPI, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator, model_validator
-from typing_extensions import TypedDict
-
-from app.db import initialize_database
+from app.db import Task, fetch_task, fetch_tasks, initialize_database
 
 
 app = FastAPI(
@@ -14,12 +12,6 @@ app = FastAPI(
 )
 
 initialize_database()
-
-
-class Task(TypedDict):
-    id: int
-    title: str
-    done: bool
 
 
 class TaskCreate(BaseModel):
@@ -86,12 +78,12 @@ def health() -> dict[str, str]:
 
 @app.get("/tasks", summary="List tasks")
 def list_tasks() -> list[Task]:
-    return tasks
+    return fetch_tasks()
 
 
 @app.get("/tasks/{task_id}", response_model=None, summary="Get a task")
 def get_task(task_id: int) -> Task | JSONResponse:
-    task = find_task(task_id)
+    task = fetch_task(task_id)
     if task is None:
         return task_not_found(task_id)
     return task
