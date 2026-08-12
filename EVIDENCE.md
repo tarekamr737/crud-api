@@ -41,7 +41,14 @@
 - Started the already-installed PostgreSQL 17 image with its temporary data directory bind-mounted under `D:\FlyRank Intern\Connecting CRUD to the database\.tmp\a4-pgdata`; no database files were placed on `C:`.
 - `.venv\Scripts\python.exe -m pytest -q` against the ready PostgreSQL instance returned `33 passed`, covering all existing CRUD/database behavior plus the new authentication tests.
 - Git audit returned `env_tracked=False` and `env_in_history=False`; `.gitignore` remains the matching ignore rule for `.env`.
-- The local `.env` currently contains no Supabase values, no local Supabase value was found in history, and `rg` found no `service_role` or hard-coded `SUPABASE_KEY` assignment in `app/` or `tests/`.
+- At the Stage 4 audit, the local `.env` contained no Supabase values; no local Supabase value was found in history, and `rg` found no `service_role` or hard-coded `SUPABASE_KEY` assignment in `app/` or `tests/`. Real publishable configuration was added later only to the ignored `.env`.
+
+## A4 Stage 5 — Live Supabase and Swagger verification
+
+- The authenticated, project-scoped Supabase MCP returned project URL `https://whkdqsjdnrdaesnptkhe.supabase.co`, matching the configured project reference.
+- Supabase MCP Auth logs proved a live signup returned success and requested confirmation; the following login failed with provider code `email_not_confirmed`, identifying the remaining live-flow blocker without exposing user data or tokens.
+- Chrome DevTools loaded `http://127.0.0.1:8000/docs`; its accessibility tree contained the global **Authorize** control and authentication controls on `/protected/profile`, `/protected/dashboard`, and `/auth/logout`, while public/signup/login routes remained unlocked.
+- Captured and visually inspected the current `docs/swagger-ui.png`; it clearly shows the auth endpoints, public/protected routes, Authorize control, and protected-route lock icons.
 
 ## A3 Stage 0 — PostgreSQL in Docker
 

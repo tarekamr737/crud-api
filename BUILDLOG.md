@@ -24,6 +24,8 @@
 
 - The in-app browser runtime reported no available browser while the locally running `/docs` endpoint returned HTTP 200. Kept the existing screenshot unchanged instead of fabricating a current auth-enabled capture; the README screenshot checklist remains open until a real browser capture is possible.
 - The first cleanup filter matched the PowerShell command text that contained the Uvicorn arguments and interrupted its own shell after stopping the API. A narrower retry removed the exact disposable `a4-regression-postgres` container and verified workspace `.tmp` directory; no project data was removed.
+- A later Chrome DevTools MCP session became available, so the stale screenshot was replaced with a live `/docs` capture and the README documentation checkpoint was completed.
+- The authenticated Supabase MCP tool set can inspect docs, project metadata, database state, advisors, and logs, but does not expose hosted Auth provider configuration. It confirmed `email_not_confirmed`; disabling confirmation remains a Dashboard-only step for this project.
 
 ## A3 Stage 0
 

@@ -17,6 +17,6 @@
 - [x] Test valid, missing, malformed, expired/tampered token flows.
 - [x] Run regression checks for existing CRUD API.
 - [x] Confirm `.env` and secrets never entered git history.
-- [ ] Update README: setup, env, run, endpoints, auth, Swagger screenshot.
+- [x] Update README: setup, env, run, endpoints, auth, Swagger screenshot.
 - [ ] Run final end-to-end signup → login → protected → tampered-token test.
 - [ ] Ensure ≥6 meaningful stage commits and push.
