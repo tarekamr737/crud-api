@@ -4,12 +4,16 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator, model_validator
 from typing_extensions import TypedDict
 
+from app.db import initialize_database
+
 
 app = FastAPI(
     title="Task API",
     version="1.0",
     description="A small in-memory API for managing tasks.",
 )
+
+initialize_database()
 
 
 class Task(TypedDict):
