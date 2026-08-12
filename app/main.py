@@ -7,19 +7,19 @@ from app.db import (
     delete_task_record,
     fetch_task,
     fetch_tasks,
-    initialize_database,
     insert_task,
     update_task_record,
 )
+from app.repository import init_db
 
 
 app = FastAPI(
     title="Task API",
     version="1.0",
-    description="A small SQLite-backed API for managing tasks.",
+    description="A small PostgreSQL-backed API for managing tasks.",
 )
 
-initialize_database()
+init_db()
 
 
 class TaskCreate(BaseModel):

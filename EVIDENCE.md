@@ -7,6 +7,14 @@
 - `docker exec crud-api-postgres psql -U tasks_user -d tasks -c "SELECT current_database(), current_user;"` returned database `tasks` and user `tasks_user`.
 - `git check-ignore .env` confirms local credentials are excluded from Git.
 
+## A3 Stage 1 — Environment connection, schema, and seeds
+
+- Installed `psycopg[binary]` 3.3.4 and added its bounded requirement.
+- Ran three separate `python -c "import app.main"` startups with `DATABASE_URL=postgresql://tasks_user:tasks_password@localhost:5432/tasks`; all exited 0.
+- Direct `psql` inspection after the third startup showed the required `SERIAL`/`TEXT`/`BOOLEAN` schema and exactly 3 rows: `Buy milk` false, `Write report` true, and `Call dentist` false.
+- `python -m pytest -q` with the PostgreSQL URL set returned `15 passed in 0.78s`, preserving the existing contract during this staged initialization change.
+- `.env` contains the local host URL and is ignored; committed `.env.example` contains the Compose service host `db`.
+
 ## Stage 0 — SQLite initialization
 
 - `python -m pytest tests/test_db.py -q` → `2 passed in 0.06s`.
