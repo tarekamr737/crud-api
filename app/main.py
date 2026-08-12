@@ -16,7 +16,7 @@ from app.db import (
 app = FastAPI(
     title="Task API",
     version="1.0",
-    description="A small in-memory API for managing tasks.",
+    description="A small SQLite-backed API for managing tasks.",
 )
 
 initialize_database()

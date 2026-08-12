@@ -4,7 +4,9 @@
 
 
 Task API is a small FastAPI project demonstrating create, read, update, and
-delete operations against an in-memory to-do list.
+delete operations against a persistent to-do list. SQLite was chosen because it
+provides durable local storage without a separate database server or additional
+Python dependency.
 
 ## Install and run
 
@@ -17,6 +19,12 @@ python -m uvicorn app.main:app --reload
 ```
 
 Open Swagger UI at <http://127.0.0.1:8000/docs>.
+
+On the first start, the app automatically creates `tasks.db` in the repository
+root, creates the `tasks` table, and inserts the three example tasks only when
+the table is empty. No manual database setup is required on a clean clone.
+Creates, updates, and deletes remain in `tasks.db` across server restarts. The
+runtime database file is intentionally ignored by Git.
 
 Run the automated checks with:
 
@@ -56,5 +64,13 @@ content-type: application/json
 
 ![Task API Swagger UI](docs/swagger-ui.png)
 
-Data is held only in process memory. It resets to the three example tasks every
-time the server restarts.
+## SQLite exploration
+
+![tasks.db open in DB Browser for SQLite](docs/db-browser.png)
+
+In DB Browser for SQLite, this query returned `3`, confirming the database held
+the three initial example tasks before the Stage 4 update and delete exercise:
+
+```sql
+SELECT COUNT(*) FROM tasks;
+```

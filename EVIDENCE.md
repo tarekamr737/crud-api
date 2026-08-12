@@ -31,3 +31,10 @@
 - Ran all five required statements. `SELECT COUNT(*) FROM tasks;` returned 3 before the destructive statements: the three seeded tasks.
 - After `UPDATE tasks SET done = 1;` followed by `DELETE FROM tasks WHERE done = 1;`, an independent SQLite connection reported `after_required_sql_count=0`, proving DB Browser executed the changes.
 - Restored the validated pre-exploration backup; a fresh connection returned `[(1, 'Buy milk', 0), (2, 'Write report', 1), (3, 'Call dentist', 0)]`.
+
+## Stage 5 — Documentation and clean bootstrap
+
+- Moved the existing runtime database aside, ran `python -c "import app.main"`, and confirmed a new repository-root `tasks.db` was created automatically.
+- Direct inspection returned exactly `[(1, 'Buy milk', 0), (2, 'Write report', 1), (3, 'Call dentist', 0)]` and columns `id INTEGER PRIMARY KEY`, `title TEXT NOT NULL`, `done INTEGER NOT NULL DEFAULT 0`.
+- `python -m pytest -q` → `14 passed in 0.55s` after the documentation changes.
+- Captured and visually checked `docs/db-browser.png`; it shows DB Browser for SQLite open on `tasks.db` with the `tasks` table and required schema.

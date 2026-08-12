@@ -13,3 +13,7 @@
 
 - DB Browser's Windows CLI exited successfully but did not apply the SQL file, including after process synchronization and explicit transaction attempts. Switched to its visible Execute SQL workflow and retained the exact required statements in `docs/stage4.sql`.
 - An initial global-keystroke GUI attempt targeted Chrome instead of DB Browser and opened a reload confirmation; canceled it without confirming or submitting anything. Replaced global input with DB Browser's `--sql` launch plus window-handle-specific capture.
+
+## Stage 5
+
+- The first clean-bootstrap proof command had a nested PowerShell/Python quoting error before application import. Split import and inspection into separate commands; the retry created the database and returned the exact seed rows/schema.
