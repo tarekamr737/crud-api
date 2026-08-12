@@ -59,6 +59,12 @@
 - Current Supabase MCP documentation confirms that disabling Confirm Email autoconfirms email/password signups and permits immediate password login; its changelog search found no breaking change affecting this behavior.
 - `.venv\Scripts\python.exe -m pytest -q` against a disposable PostgreSQL 17 instance with its data under the `D:` workspace returned `33 passed in 7.09s`; the container and verified temporary data directory were then removed.
 
+## A4 Push — Public repository delivery
+
+- `git push origin main` advanced the public repository from `e6d9634` to A4 Stage 6 commit `ab24e3a`.
+- `git ls-remote origin refs/heads/main` returned `ab24e3ad35b14933d27d644eb5219980cac9bcf5`, exactly matching local `HEAD` before this delivery bookkeeping commit.
+- The A4 range contains meaningful Stage 0, 1, 2, 3, 4, 5, and 6 commits, plus the separately committed Supabase agent skills installation.
+
 ## A3 Stage 0 — PostgreSQL in Docker
 
 - `docker volume create crud-api-taskdata` created the named persistence volume.

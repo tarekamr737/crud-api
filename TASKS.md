@@ -19,4 +19,4 @@
 - [x] Confirm `.env` and secrets never entered git history.
 - [x] Update README: setup, env, run, endpoints, auth, Swagger screenshot.
 - [x] Run final end-to-end signup → login → protected → tampered-token test.
-- [ ] Ensure ≥6 meaningful stage commits and push.
+- [x] Ensure ≥6 meaningful stage commits and push.
