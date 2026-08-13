@@ -5,6 +5,7 @@
 - Scored only the three routing fields (`category`, `urgency`, `suggested_team`) across exactly eight hand-labelled cases; confidence and prose remain validated API fields but are not treated as exact-match classification labels.
 - The real eval encountered transient free-pool failures on three attempts, all recovered inside the production retry policy. The final result was 24/24 with no evaluator-side retry loop.
 - Added `python-dotenv` only so the standalone eval runner and Uvicorn's documented `--env-file` workflow can consume the ignored local configuration; Docker Compose continues to inject the same variables with `env_file`.
+- The configured remote redirected from its legacy `crud-api` URL to the canonical `Back-End-AI-Engineering-FlyRank-Intern` repository. Kept the configured remote intact because Git followed the redirect safely and GitHub resolved the canonical PR target.
 
 ## Week 7 Stage 4
 

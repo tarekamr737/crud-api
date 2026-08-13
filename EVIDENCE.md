@@ -9,6 +9,12 @@
 - The Stage 5 regression returned `46 passed in 1.89s`; `compileall` passed for `src`, `app`, and `evals`, the eval fixture count was exactly 8, and `git diff --check` passed.
 - `.env` is ignored and untracked, its history query returned no commits, and the tracked-source scan found no OpenRouter `sk-or-v1-` token.
 - The Docker image now copies `src`, `prompts`, and `logs` alongside `app`, making the triage route and versioned prompt available in the existing Compose runtime.
+- Pushed `agent/llm-support-triage` to the public canonical repository and opened draft PR [#1](https://github.com/tarekamr737/Back-End-AI-Engineering-FlyRank-Intern/pull/1) against `main`.
+
+## Week 7 Final audit — HTTP contract
+
+- `.venv\Scripts\python.exe -m pytest tests\test_triage_final_audit.py tests\test_triage.py tests\test_llm_retry.py tests\test_llm_client.py tests\test_triage_schema.py tests\test_triage_prompt.py tests\test_evals.py tests\test_auth.py tests\test_auth_dependency.py -q --basetemp=.tmp\pytest-w7-final` returned `47 passed in 2.06s`.
+- The dedicated final matrix exercised HTTP 200, 400, 422, 503, and 504 in one test. It proved invalid input and the kill switch make zero completion calls, 422 makes exactly one repair call, and neither raw model text nor private timeout detail reaches HTTP output.
 
 ## Week 7 Stage 4 — Timeout, retries, logging, and kill switch
 
