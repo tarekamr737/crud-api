@@ -1,5 +1,15 @@
 # Evidence
 
+## W5 A9 — Complete README
+
+- A content checklist found every required section in `scraper/README.md` and
+  `git diff --check` returned no formatting errors.
+- The README now takes a stranger from Python 3.10+ installation to the single
+  run command, names all three outputs, defines the record schema, documents
+  caching/politeness/retries, includes the verified 60-record cached report,
+  states one selector-coupling limitation, explains why no browser is needed,
+  and includes the required ethics/site-reuse language.
+
 ## W5 A9 — Live 60-book run and rerun
 
 - The first successful cached live run printed `catalogue_pages=3
