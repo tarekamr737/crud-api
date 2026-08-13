@@ -1,5 +1,15 @@
 # Build Log
 
+## Async triage jobs
+
+- Used the existing PostgreSQL service as the durable queue and added one separate worker process instead of introducing Redis/Celery. This keeps submission fast while making state survive API restarts.
+- Required a client-provided `Idempotency-Key`; the database returns the original job only when its request hash matches, and rejects key reuse for different input with 409.
+- Used expiring leases plus lease-token-guarded updates because queue delivery is intentionally at least once. A stale worker may finish, but it cannot overwrite a result after another worker has reclaimed the job.
+- Kept terminal alerts as safe structured stdout events for the deployment log/alert pipeline; neither user text nor provider exception detail is included.
+- Replaced the pre-existing Docker-managed PostgreSQL volume with `./.data/postgres`, an ignored bind mount under the D: workspace, so material runtime data does not consume the full C: partition.
+- `docker compose config` expanded the ignored `.env` into diagnostic output, including the OpenRouter credential. No value entered a file or Git, but the key must be rotated because session output is exposure. Restricted the database to PostgreSQL settings and the worker to database/LLM settings so neither receives unrelated secrets.
+- The first D:-backed PostgreSQL initialization produced localhost-only `pg_hba.conf` rules, so worker/API containers were rejected. Set `POSTGRES_HOST_AUTH_METHOD=scram-sha-256` for password-authenticated Compose-network access and reinitialized only the disposable database created for this verification.
+
 ## Week 7 Final audit
 
 - A literal Git pickaxe search for `sk-or-v1-` initially matched the audit wording in `EVIDENCE.md`, not a credential. Rechecked current and historical diffs with a key-shaped regex requiring at least ten suffix characters; both were clean.

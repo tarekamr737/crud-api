@@ -4,6 +4,7 @@ __pycache__/
 .venv*/
 *.py[cod]
 .env
+.data/
 tasks.db
 *.db-journal
 logs/*.jsonl

@@ -94,7 +94,11 @@ app.include_router(triage_router)
 
 @app.get("/", summary="Show API metadata")
 def read_root() -> dict[str, str | list[str]]:
-    return {"name": "Task API", "version": "1.0", "endpoints": ["/tasks"]}
+    return {
+        "name": "Task API",
+        "version": "1.0",
+        "endpoints": ["/tasks", "/triage", "/triage/jobs/{job_id}"],
+    }
 
 
 @app.get("/health", summary="Check API health")

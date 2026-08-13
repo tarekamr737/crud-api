@@ -1,7 +1,10 @@
 .git
 .env
+.data
+.tmp
 .venv
 .venv*/
 __pycache__
 .pytest_cache
 tasks.db
+logs/*.jsonl

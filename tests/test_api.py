@@ -32,7 +32,7 @@ def test_root_and_health() -> None:
     assert root.json() == {
         "name": "Task API",
         "version": "1.0",
-        "endpoints": ["/tasks"],
+        "endpoints": ["/tasks", "/triage", "/triage/jobs/{job_id}"],
     }
     assert health.status_code == 200
     assert health.json() == {"status": "ok"}

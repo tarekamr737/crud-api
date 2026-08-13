@@ -1,5 +1,15 @@
 # Evidence
 
+## Async triage jobs — acceptance, idempotency, retries, and alerts
+
+- The final post-lock regression ran in the existing Linux API image against D:-backed PostgreSQL and returned `76 passed in 37.90s`; the only warning is the pre-existing Starlette/httpx deprecation.
+- The end-to-end acceptance returned `1 passed in 21.42s`: HTTP submission returned 202 and queued status, one stub worker iteration produced succeeded status with a validated result and zero model calls, and replaying the same key/body returned the original job ID.
+- The focused HTTP/worker/service regression returned `56 passed`; submission tests prove `POST /triage` returns 202 with `Location` and `Retry-After` headers while the model completion mock remains uncalled.
+- Contract tests prove invalid input or a missing `Idempotency-Key` returns field-specific 400, conflicting key reuse returns 409, unknown jobs return 404, and status responses never expose stored input text.
+- Worker tests prove successful work persists only the validated `TriageResult`, non-terminal failures schedule retries without leaking exception detail, and the third failed job attempt emits one safe structured `triage_job_failed` alert.
+- The focused real-PostgreSQL suite returned `3 passed in 12.09s`, proving idempotent enqueue/conflict behavior, three attempts to terminal failure, and lease-token ownership. The queue uses `FOR UPDATE SKIP LOCKED`, and startup DDL/seed work is protected by a PostgreSQL advisory transaction lock.
+- Compose started PostgreSQL with SCRAM authentication and a bind mount resolving under `D:\FlyRank Intern\Connecting CRUD to the database\.data\postgres`; no model call was made during runtime verification.
+
 ## Week 7 Stage 5 — Eval, README, and release readiness
 
 - `.venv\Scripts\python.exe evals\run_evals.py` made real calls with production retries only and returned `score=100.0`, `passed_checks=24`, `total_checks=24`, `failed_case_ids=[]`, date `2026-08-13`, and prompt `triage-v1`.

@@ -1,83 +1,69 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
+from datetime import datetime, timezone
 from unittest.mock import patch
+from uuid import uuid4
+
+from fastapi.testclient import TestClient
 
 os.environ.setdefault("DATABASE_URL", "postgresql://unused")
 os.environ.setdefault("SUPABASE_URL", "https://example.supabase.co")
 os.environ.setdefault("SUPABASE_KEY", "test-anon-key")
 
-import app.repository as repository
+import app.repository as app_repository
 
 
-original_init_db = repository.init_db
-repository.init_db = lambda: None
+original_init_db = app_repository.init_db
+app_repository.init_db = lambda: None
 from app.main import app
 
-repository.init_db = original_init_db
-
-from fastapi.testclient import TestClient
-
-from src.llm.client import LLMProviderTimeoutError
+app_repository.init_db = original_init_db
+from src.llm.schema import JobStatus
 
 
 client = TestClient(app)
 
 
-def test_final_http_status_matrix(tmp_path: Path) -> None:
-    valid = (
-        '{"category":"billing","urgency":"normal",'
-        '"suggested_team":"billing","confidence":0.9,'
-        '"reason":"The message reports a duplicate charge."}'
-    )
-    cases = (
-        (
-            {"LLM_ENABLED": "true", "LLM_STUB": "0"},
-            {"text": "I was charged twice."},
-            [valid],
-            200,
-        ),
-        (
-            {"LLM_ENABLED": "true", "LLM_STUB": "0"},
-            {"text": ""},
-            [],
-            400,
-        ),
-        (
-            {"LLM_ENABLED": "true", "LLM_STUB": "0"},
-            {"text": "Unclear"},
-            ["bad-first", "bad-second"],
-            422,
-        ),
-        (
-            {"LLM_ENABLED": "false", "LLM_STUB": "0"},
-            {"text": "Valid input"},
-            [],
-            503,
-        ),
-        (
-            {"LLM_ENABLED": "true", "LLM_STUB": "0"},
-            {"text": "Valid input"},
-            [LLMProviderTimeoutError("private timeout")],
-            504,
-        ),
-    )
+def test_async_triage_http_contract() -> None:
+    now = datetime.now(timezone.utc)
+    job_id = uuid4()
+    queued = {
+        "id": job_id,
+        "input_text": "Valid input",
+        "status": JobStatus.QUEUED,
+        "attempts": 0,
+        "max_attempts": 3,
+        "result": None,
+        "error": None,
+        "created_at": now,
+        "updated_at": now,
+    }
+    failed = {
+        **queued,
+        "status": JobStatus.FAILED,
+        "attempts": 3,
+        "error": "Triage processing failed",
+    }
 
-    with patch("src.llm.service.QUARANTINE_PATH", tmp_path / "quarantine.jsonl"):
-        for environment, body, effects, expected_status in cases:
-            with (
-                patch.dict(os.environ, environment),
-                patch("src.llm.service.complete", side_effect=effects) as completion,
-            ):
-                response = client.post("/triage", json=body)
+    with (
+        patch("src.routes.triage.enqueue_triage_job", return_value=queued),
+        patch("src.routes.triage.get_triage_job", side_effect=[queued, failed]),
+        patch("src.llm.service.complete") as completion,
+    ):
+        accepted = client.post(
+            "/triage",
+            headers={"Idempotency-Key": "audit-key"},
+            json={"text": "Valid input"},
+        )
+        waiting = client.get(f"/triage/jobs/{job_id}")
+        terminal = client.get(f"/triage/jobs/{job_id}")
 
-            assert response.status_code == expected_status
-            if expected_status == 422:
-                assert completion.call_count == 2
-                assert "bad-first" not in response.text
-                assert "bad-second" not in response.text
-            if expected_status in {400, 503}:
-                completion.assert_not_called()
-            if expected_status == 504:
-                assert "private" not in response.text
+    assert accepted.status_code == 202
+    assert waiting.json()["status"] == "queued"
+    assert waiting.json()["result"] is None
+    assert terminal.json()["status"] == "failed"
+    assert terminal.json()["attempts"] == 3
+    assert terminal.json()["error"] == "Triage processing failed"
+    assert "input_text" not in terminal.text
+    completion.assert_not_called()

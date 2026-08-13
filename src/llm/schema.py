@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -51,3 +53,31 @@ class TriageResult(BaseModel):
         if sum(reason.count(mark) for mark in ".!?") > 1:
             raise ValueError("reason must be one sentence")
         return reason
+
+
+class JobStatus(str, Enum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+
+
+class TriageJobAccepted(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: UUID
+    status: JobStatus
+    status_url: str
+
+
+class TriageJobStatus(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: UUID
+    status: JobStatus
+    attempts: int = Field(ge=0)
+    max_attempts: int = Field(ge=1)
+    result: TriageResult | None = None
+    error: str | None = None
+    created_at: datetime
+    updated_at: datetime

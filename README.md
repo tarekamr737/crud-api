@@ -1,33 +1,41 @@
 # LLM Support Triage API
 
-This FastAPI endpoint turns one unstructured support message into a validated category, urgency, team, confidence, and one-sentence reason. Model text is treated as untrusted: the service validates it, repairs it once when necessary, and never exposes raw completions.
+This FastAPI API accepts an unstructured support message immediately, processes the slow LLM call in a separate worker, and exposes durable job status. Model text is treated as untrusted: the worker validates it, repairs it once when necessary, and never exposes raw completions.
 
 ## Run it and call `/triage`
 
-From a fresh clone, copy the environment template, fill `SUPABASE_URL`, `SUPABASE_KEY`, and `LLM_API_KEY` in the ignored `.env`, then start the existing API and database:
+From a fresh clone, copy the environment template, fill `SUPABASE_URL`, `SUPABASE_KEY`, and `LLM_API_KEY` in the ignored `.env`, then start the API, worker, and database:
 
 ```powershell
 Copy-Item .env.example .env
 docker compose up --build -d
 ```
 
-Make a real-model request:
+Queue a real-model request. `Idempotency-Key` is required so a client retry cannot create duplicate work:
 
 ```powershell
-curl.exe -s -X POST http://127.0.0.1:8000/triage -H "Content-Type: application/json" -d '{"text":"I was charged twice for my monthly plan."}'
+curl.exe -i -X POST http://127.0.0.1:8000/triage -H "Content-Type: application/json" -H "Idempotency-Key: demo-charge-001" -d '{"text":"I was charged twice for my monthly plan."}'
 ```
 
-Exact response from a real `google/gemma-4-26b-a4b-it:free` call:
+The API responds with HTTP 202 without calling the model:
 
 ```json
-{"category":"billing","urgency":"normal","suggested_team":"billing","confidence":1.0,"reason":"The user is reporting a duplicate charge for their subscription."}
+{"id":"8e642f41-5da1-475f-bacd-49524ed2ef47","status":"queued","status_url":"/triage/jobs/8e642f41-5da1-475f-bacd-49524ed2ef47"}
 ```
 
-An empty input returns HTTP 400 and identifies `text` before any model call:
+Poll the returned URL until `status` is `succeeded` or `failed`:
 
 ```powershell
-curl.exe -i -X POST http://127.0.0.1:8000/triage -H "Content-Type: application/json" -d '{"text":""}'
+curl.exe -s http://127.0.0.1:8000/triage/jobs/8e642f41-5da1-475f-bacd-49524ed2ef47
 ```
+
+Example successful status using the recorded real `google/gemma-4-26b-a4b-it:free` result:
+
+```json
+{"id":"8e642f41-5da1-475f-bacd-49524ed2ef47","status":"succeeded","attempts":1,"max_attempts":3,"result":{"category":"billing","urgency":"normal","suggested_team":"billing","confidence":1.0,"reason":"The user is reporting a duplicate charge for their subscription."},"error":null,"created_at":"2026-08-13T12:00:00Z","updated_at":"2026-08-13T12:00:02Z"}
+```
+
+Reusing a key with the same body returns the same job; reusing it for different input returns 409. Workers claim jobs with expiring leases, accept that work may execute twice, and allow only the current lease owner to commit. Failures retry with bounded backoff for three job attempts. A terminal failure stores only `Triage processing failed` and emits a structured `{"event":"triage_job_failed",...,"alert":true}` line for log-based alerting.
 
 ## Job card
 
@@ -43,7 +51,7 @@ LLM_API_KEY=your_openrouter_key
 LLM_MODEL=google/gemma-4-26b-a4b-it:free
 ```
 
-Operational controls are `LLM_ENABLED=false` for an immediate zero-call 503 and `LLM_STUB=1` for deterministic zero-call development output. The real key belongs only in `.env`; never commit it or send confidential/personal data to a free provider.
+Operational controls are `LLM_ENABLED=false` to prevent worker model calls and `LLM_STUB=1` for deterministic zero-call development output. The real key belongs only in `.env`; never commit it or send confidential/personal data to a free provider.
 
 ## Real eval score
 
@@ -177,8 +185,8 @@ and inserts three sample tasks only when the table is empty.
 | `LLM_BASE_URL` | FastAPI | OpenAI-compatible provider base URL |
 | `LLM_API_KEY` | FastAPI | Provider key; keep only in ignored `.env` |
 | `LLM_MODEL` | FastAPI | Provider model identifier |
-| `LLM_ENABLED` | FastAPI | `false` disables all LLM calls with HTTP 503 |
-| `LLM_STUB` | FastAPI | `1` returns deterministic output with zero calls |
+| `LLM_ENABLED` | Worker | `false` prevents all model calls; affected jobs retry, then fail safely |
+| `LLM_STUB` | Worker | `1` completes jobs deterministically with zero model calls |
 
 `.env` is excluded from Git. `.env.example` contains only development defaults
 and placeholders.
@@ -207,6 +215,17 @@ and placeholders.
 | `GET` | `/public/info` | Public | Public example resource | 200 |
 | `GET` | `/protected/profile` | Bearer token | Return safe verified-user fields | 200 |
 | `GET` | `/protected/dashboard` | Bearer token | Protected example resource | 200 |
+
+### Asynchronous triage routes
+
+| Method | Path | Required input | Purpose | Success |
+|---|---|---|---|---:|
+| `POST` | `/triage` | JSON body + `Idempotency-Key` header | Enqueue LLM triage | 202 |
+| `GET` | `/triage/jobs/{job_id}` | Job UUID | Read status/result | 200 |
+
+Job submission validation returns 400, conflicting idempotency-key reuse returns
+409, and an unknown job ID returns 404. Model failures are recorded on the job
+instead of being returned from the submission request.
 
 Invalid request bodies return JSON `400` responses. Unknown task IDs return
 JSON `404`. Missing, malformed, invalid, tampered, or expired Bearer tokens
@@ -296,21 +315,23 @@ docker compose exec db psql -U tasks_user -d tasks \
 
 ![PostgreSQL rows queried with psql](docs/postgres-psql.png)
 
-PostgreSQL data lives in the Compose named volume `taskdata` and survives:
+PostgreSQL data lives under the ignored D-workspace path `.data/postgres` and
+survives:
 
 ```bash
 docker compose down
 docker compose up
 ```
 
-Use `docker compose down -v` only when you intentionally want to remove the
-database volume and its contents.
+Stopping Compose does not delete that bind-mounted data. Remove `.data/postgres`
+only when you intentionally want to discard the local database.
 
 ## API tests
 
-The root test suite covers CRUD behavior, PostgreSQL persistence, request
-validation, authentication responses, Bearer-token edge cases, protected-route
-reuse, logout, and OpenAPI security metadata.
+The root test suite covers CRUD behavior, PostgreSQL persistence, async triage
+idempotency/leases/retries/alerts, request validation, authentication responses,
+Bearer-token edge cases, protected-route reuse, logout, and OpenAPI security
+metadata.
 
 With PostgreSQL available and all required environment variables configured:
 
