@@ -16,6 +16,15 @@
 - `.venv\Scripts\python.exe -m pytest tests\test_triage_final_audit.py tests\test_triage.py tests\test_llm_retry.py tests\test_llm_client.py tests\test_triage_schema.py tests\test_triage_prompt.py tests\test_evals.py tests\test_auth.py tests\test_auth_dependency.py -q --basetemp=.tmp\pytest-w7-final` returned `47 passed in 2.06s`.
 - The dedicated final matrix exercised HTTP 200, 400, 422, 503, and 504 in one test. It proved invalid input and the kill switch make zero completion calls, 422 makes exactly one repair call, and neither raw model text nor private timeout detail reaches HTTP output.
 
+## Week 7 Final audit — Fresh snapshot and invariants
+
+- Exported committed `f70e820` into a new ignored directory on D:, copied `.env.example` to `.env`, created a fresh D:-local `.venv`, installed the committed requirements, and reran the committed final suite with `47 passed in 3.46s`.
+- Fresh environment creation, dependency installation, and tests took approximately 122 seconds total, below the five-minute requirement. The venv, pip cache, temp directory, and pytest base temp all remained under the D: snapshot.
+- `LLM_TIMEOUT_SECONDS` is `30.0`, SDK retries are disabled, and the custom policy is capped at three attempts. Tests prove output failure triggers no more than one repair call and raw model strings never enter HTTP responses.
+- `git rev-list --count origin/main..HEAD` returned 7 meaningful feature/audit commits, including each required Stage 0 through Stage 5 message.
+- `.env` is untracked and absent from history. Current-tree and all-history scans using a key-shaped OpenRouter regex returned no credential value; the literal prefix occurrence is only the documented audit statement itself.
+- Draft PR [#1](https://github.com/tarekamr737/Back-End-AI-Engineering-FlyRank-Intern/pull/1) is open from `agent/llm-support-triage` to `main`.
+
 ## Week 7 Stage 4 — Timeout, retries, logging, and kill switch
 
 - `.venv\Scripts\python.exe -m pytest tests\test_llm_client.py tests\test_llm_retry.py tests\test_triage.py tests\test_triage_schema.py tests\test_triage_prompt.py -q --basetemp=.tmp\pytest-w7-stage4` returned `27 passed in 1.85s`.

@@ -1,5 +1,10 @@
 # Build Log
 
+## Week 7 Final audit
+
+- A literal Git pickaxe search for `sk-or-v1-` initially matched the audit wording in `EVIDENCE.md`, not a credential. Rechecked current and historical diffs with a key-shaped regex requiring at least ten suffix characters; both were clean.
+- Avoided Docker for the clean-snapshot proof because its engine storage could use the full C: partition. Exported committed `HEAD` under the repository's ignored `.tmp`, and redirected the fresh environment, pip cache, pytest base temp, `TEMP`, and `TMP` to D:.
+
 ## Week 7 Stage 5
 
 - Scored only the three routing fields (`category`, `urgency`, `suggested_team`) across exactly eight hand-labelled cases; confidence and prose remain validated API fields but are not treated as exact-match classification labels.
