@@ -1,5 +1,26 @@
+import json
+
+from src.models import normalize_book
 from src.parser import parse_product_urls
-from src.pipeline import START_URL, deduplicate_urls, discover_book_urls, discover_catalogue_pages
+from src.pipeline import (
+    START_URL,
+    deduplicate_urls,
+    discover_book_urls,
+    discover_catalogue_pages,
+    validate_and_store,
+)
+
+
+VALID_RAW_RECORD = {
+    "title": "A Test Book",
+    "product_url": "https://books.toscrape.com/catalogue/a-test-book/index.html",
+    "price_text": "£51.77",
+    "availability_text": "In stock (22 available)",
+    "rating_text": "Three",
+    "description": None,
+    "source_page": "https://books.toscrape.com/",
+    "fetched_at": "2026-08-13T10:00:00+00:00",
+}
 
 
 def test_discovers_exactly_three_catalogue_pages_via_next_links() -> None:
@@ -64,3 +85,21 @@ def test_relative_product_url_uses_page_url_as_its_base() -> None:
 
 def test_duplicate_removal_preserves_first_seen_order() -> None:
     assert deduplicate_urls(["b", "a", "b", "c", "a"]) == ["b", "a", "c"]
+
+
+def test_validation_routes_good_and_bad_records_to_separate_files(tmp_path) -> None:
+    valid_candidate = normalize_book(VALID_RAW_RECORD)
+    invalid_candidate = {**valid_candidate, "title": ""}
+
+    valid, invalid = validate_and_store([valid_candidate, invalid_candidate], tmp_path)
+
+    stored_books = json.loads((tmp_path / "books.json").read_text(encoding="utf-8"))
+    stored_errors = json.loads((tmp_path / "errors.json").read_text(encoding="utf-8"))
+    assert valid == stored_books
+    assert invalid == stored_errors
+    assert len(stored_books) == 1
+    assert stored_books[0]["title"] == "A Test Book"
+    assert len(stored_errors) == 1
+    assert stored_errors[0]["product_url"] == invalid_candidate["product_url"]
+    assert "title" in stored_errors[0]["reason"]
+    assert all(record["title"] for record in stored_books)

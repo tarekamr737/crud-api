@@ -1,5 +1,14 @@
 # Evidence
 
+## W5 A9 — Validation routing
+
+- `..\.venv\Scripts\python.exe -m pytest tests\test_pipeline.py -q
+  --basetemp=.tmp\pytest` returned `6 passed`.
+- The storage-boundary test submits one valid and one empty-title candidate,
+  then reads both generated JSON files back from disk: `books.json` contains
+  only the valid record and `errors.json` contains the rejected record, its
+  canonical URL, and Pydantic's reason.
+
 ## W5 A9 — Pydantic record schema
 
 - `..\.venv\Scripts\python.exe -m pytest tests\test_models.py -q

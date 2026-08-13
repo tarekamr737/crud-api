@@ -1,7 +1,12 @@
 """Scraping pipeline orchestration."""
 
 from collections.abc import Callable
+import json
+from pathlib import Path
 
+from pydantic import ValidationError
+
+from .models import BookRecord
 from .parser import parse_next_url, parse_product_urls
 
 
@@ -46,3 +51,34 @@ def discover_book_urls(pages: list[tuple[str, str]]) -> list[str]:
         for product_url in parse_product_urls(html, page_url)
     ]
     return deduplicate_urls(discovered)
+
+
+def validate_and_store(
+    normalized_records: list[dict[str, object]], output_dir: Path
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    """Validate every candidate and write separate valid/error JSON outputs."""
+    valid_records: list[dict[str, object]] = []
+    invalid_records: list[dict[str, object]] = []
+
+    for candidate in normalized_records:
+        try:
+            valid_records.append(BookRecord.model_validate(candidate).model_dump(mode="json"))
+        except ValidationError as error:
+            invalid_records.append(
+                {
+                    "product_url": str(candidate.get("product_url", "")),
+                    "reason": str(error),
+                    "record": candidate,
+                }
+            )
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "books.json").write_text(
+        json.dumps(valid_records, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    (output_dir / "errors.json").write_text(
+        json.dumps(invalid_records, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    return valid_records, invalid_records
