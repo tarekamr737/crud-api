@@ -1,5 +1,11 @@
 # Build Log
 
+## W5 A9 — HTML cache
+
+- Pytest does not create a missing parent of `--basetemp` on this Windows
+  setup. Created the ignored `scraper/.tmp/` directory on `D:` before rerunning
+  so no test artifacts use the full `C:` drive.
+
 ## W5 A9 — Target classification
 
 - The target has no published `/robots.txt` file (HTTP 404). Treated that as

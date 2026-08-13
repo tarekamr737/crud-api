@@ -1,5 +1,14 @@
 # Evidence
 
+## W5 A9 — HTML cache
+
+- `..\.venv\Scripts\python.exe -m pytest tests\test_fetcher.py -q
+  --basetemp=.tmp\pytest` returned `3 passed` with all test files under the
+  `D:` workspace.
+- The cache test calls the same URL twice, observes exactly one HTTP boundary
+  call, one hashed `.html` file, counters of `pages_fetched=1` and
+  `cache_hits=1`, and exact `FETCH` then `CACHE HIT` console messages.
+
 ## W5 A9 — Polite HTTP fetch
 
 - `..\.venv\Scripts\python.exe -m pytest tests\test_fetcher.py -q` returned

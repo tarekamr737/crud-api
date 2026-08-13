@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from src.fetcher import DEFAULT_TIMEOUT, FetchError, fetch_http
+from src.fetcher import DEFAULT_TIMEOUT, FetchError, FetchStats, fetch, fetch_http
 
 
 @dataclass
@@ -46,3 +46,23 @@ def test_fetch_http_rejects_non_200_before_returning_html() -> None:
             session=session,
             sleep=lambda _: None,
         )
+
+
+def test_fetch_then_cache_hit_avoids_a_second_request(tmp_path, capsys) -> None:
+    calls: list[str] = []
+    stats = FetchStats()
+
+    def fake_http_fetch(url: str) -> str:
+        calls.append(url)
+        return "<html>cached</html>"
+
+    url = "https://example.test/catalogue/page-1.html"
+    first = fetch(url, cache_dir=tmp_path, stats=stats, http_fetch=fake_http_fetch)
+    second = fetch(url, cache_dir=tmp_path, stats=stats, http_fetch=fake_http_fetch)
+
+    assert first == second == "<html>cached</html>"
+    assert calls == [url]
+    assert stats.pages_fetched == 1
+    assert stats.cache_hits == 1
+    assert len(list(tmp_path.glob("*.html"))) == 1
+    assert capsys.readouterr().out.splitlines() == [f"FETCH {url}", f"CACHE HIT {url}"]
