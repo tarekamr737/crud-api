@@ -1,5 +1,19 @@
 # Evidence
 
+## W5 A9 — Clean-snapshot run command
+
+- Exported committed `HEAD` to a fresh ignored directory under
+  `scraper/.tmp/` on `D:`, linked the already installed `D:` virtual
+  environment, and copied the verified cache so validation would not repeat
+  target requests.
+- From that fresh snapshot, the README's exact
+  `.\.venv\Scripts\python.exe -m src.main` command exited 0 and printed
+  `catalogue_pages=3 discovered=60 unique_urls=60 valid_records=60
+  invalid_records=0 failed_pages=0`.
+- Direct snapshot output checks returned `books=60 cache_hits=63
+  pages_fetched=0`, proving the committed project runs from its documented
+  entry point without relying on uncommitted source files.
+
 ## W5 A9 — Git/cache hygiene
 
 - `git check-ignore` matched all three generated JSON outputs and the cache;
