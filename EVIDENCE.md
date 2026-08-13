@@ -1,5 +1,13 @@
 # Evidence
 
+## W5 A9 — Price normalization
+
+- `..\.venv\Scripts\python.exe -m pytest tests\test_models.py -q
+  --basetemp=.tmp\pytest` returned `5 passed`.
+- Tests prove `£51.77` becomes the float `51.77`, normalization retains the
+  original `price_text`, and empty, currency-less, or non-numeric inputs are
+  rejected.
+
 ## W5 A9 — Raw book extraction
 
 - `..\.venv\Scripts\python.exe -m pytest tests\test_parser.py -q
