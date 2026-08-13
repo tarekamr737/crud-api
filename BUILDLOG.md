@@ -1,5 +1,10 @@
 # Build Log
 
+## Week 7 Stage 0
+
+- Used the user-selected `google/gemma-4-26b-a4b-it:free` model instead of the architecture document's older `openrouter/free` placeholder.
+- The first live checkpoint reached OpenRouter but returned 401 because the manually loaded `.env` value retained its surrounding quotes. Stripping dotenv-style quotes in process memory sent the authentication header correctly; the retry returned exactly `ready`.
+
 ## W5 A9 — Global skill promotion
 
 - Installed fresh official skills from `supabase/agent-skills` instead of

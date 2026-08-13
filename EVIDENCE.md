@@ -1,5 +1,12 @@
 # Evidence
 
+## Week 7 Stage 0 — Provider readiness
+
+- `.venv\Scripts\python.exe -m pytest tests\test_llm_client.py -q --basetemp=.tmp\pytest-w7-stage0` returned `3 passed in 0.71s`.
+- A bounded live OpenRouter completion using `google/gemma-4-26b-a4b-it:free` returned exactly `ready`; the key was loaded only from the ignored `.env` and was never printed.
+- `git check-ignore -v .env` matched `.gitignore:6:.env`; `.env` remains absent from tracked files, while `.env.example` contains all five LLM variable names with no secret.
+- All SDK files and test artifacts remain inside the repository-local `.venv` and `.tmp` directories on `D:`.
+
 ## W5 A9 — Public repository delivery
 
 - With explicit authorization to publish the repository's pre-existing API
