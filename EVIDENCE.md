@@ -1,5 +1,13 @@
 # Evidence
 
+## W5 A9 — Polite HTTP fetch
+
+- `..\.venv\Scripts\python.exe -m pytest tests\test_fetcher.py -q` returned
+  `2 passed`.
+- The focused tests prove every request receives an identifiable User-Agent,
+  the declared 15-second timeout, a 0.5-second delay, and that non-200 content
+  raises `FetchError` instead of being returned for parsing.
+
 ## W5 A9 — Target classification
 
 - A polite request with an identifiable User-Agent and 15-second timeout to
