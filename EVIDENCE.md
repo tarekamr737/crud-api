@@ -1,5 +1,14 @@
 # Evidence
 
+## W5 A9 — Broken URL acceptance
+
+- `..\.venv\Scripts\python.exe -m pytest
+  tests\test_pipeline.py::test_one_fake_url_still_finishes_with_sixty_good_records
+  -q --basetemp=.tmp\pytest` returned `1 passed`.
+- The test runs 60 unique valid detail jobs plus one fake URL that raises an
+  HTTP 404 `FetchError`; processing and validation finish with 60 unique valid
+  records, zero invalid records, and exactly one recorded page failure.
+
 ## W5 A9 — Run report
 
 - `..\.venv\Scripts\python.exe -m pytest tests\test_pipeline.py -q

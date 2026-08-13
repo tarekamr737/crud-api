@@ -211,3 +211,36 @@ def test_full_pipeline_writes_report_with_actual_counters(tmp_path) -> None:
         "failed_pages": 0,
         "failures": [],
     }
+
+
+def test_one_fake_url_still_finishes_with_sixty_good_records(tmp_path) -> None:
+    source_page = "https://books.toscrape.com/"
+    good_urls = [
+        f"https://books.toscrape.com/catalogue/book-{number}/index.html"
+        for number in range(60)
+    ]
+    fake_url = "https://books.toscrape.com/catalogue/does-not-exist/index.html"
+    detail_html = """
+    <div class="product_main">
+      <h1>Book</h1><p class="price_color">£12.34</p>
+      <p class="instock availability">In stock</p>
+      <p class="star-rating Four"></p>
+    </div>
+    """
+
+    def fake_fetch(url: str) -> str:
+        if url == fake_url:
+            raise FetchError(f"{url}: HTTP 404")
+        return detail_html
+
+    records, failures = collect_book_records(
+        [(url, source_page) for url in [*good_urls, fake_url]],
+        fake_fetch,
+        timestamp_factory=lambda: "2026-08-13T10:00:00+00:00",
+    )
+    valid, invalid = validate_and_store(records, tmp_path)
+
+    assert len(valid) == 60
+    assert len({record["product_url"] for record in valid}) == 60
+    assert invalid == []
+    assert failures == [{"url": fake_url, "reason": f"{fake_url}: HTTP 404"}]
