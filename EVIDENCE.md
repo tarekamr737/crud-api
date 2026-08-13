@@ -1,5 +1,16 @@
 # Evidence
 
+## W5 A9 — Public repository delivery
+
+- With explicit authorization to publish the repository's pre-existing API
+  code together with the scraper, `git push origin main` advanced public
+  `https://github.com/tarekamr737/crud-api.git` from `2bdd61c` to `d85abc1`.
+- `git ls-remote origin refs/heads/main` returned
+  `d85abc1f7de257b552c051892f937d95578e8c70`, exactly matching local `HEAD`
+  before this delivery bookkeeping commit.
+- The pushed history contains 20 verified scraper implementation/acceptance
+  commits plus the professional README and global-skill cleanup commit.
+
 ## W5 A9 — Professional README and global skills
 
 - Replaced the outdated root API-only README with a professional scraper
