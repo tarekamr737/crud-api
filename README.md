@@ -1,144 +1,171 @@
-# Task API with Supabase Auth
+# The Polite Scraper
 
-Task API is a FastAPI CRUD service backed by PostgreSQL and protected by
-Supabase Auth. Supabase owns user accounts, passwords, sessions, and token
-issuance; FastAPI verifies each protected request's Bearer token with Supabase.
-The original task CRUD and PostgreSQL persistence behavior remain unchanged.
+> A respectful, deterministic Python pipeline that collects and validates the
+> first 60 books from the Books to Scrape practice sandbox.
 
-![Task API Swagger UI](docs/swagger-ui.png)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Tests](https://img.shields.io/badge/tests-32%20passing-2EA44F)](scraper/tests)
+[![Scope](https://img.shields.io/badge/scope-60%20books-6F42C1)](scraper/output/sample-run-report.json)
 
-## Supabase setup
+The project follows catalogue pagination instead of hardcoding product URLs,
+uses an identifiable and rate-limited HTTP client, caches every successful
+response, validates finished records with Pydantic, and reports every run with
+auditable counters. One broken detail page is isolated and cannot terminate the
+remaining work.
 
-Create a Supabase project and copy its project URL and anon/publishable key from
-the project's API settings. Never use a `service_role` key in this application.
+## Verified outcome
 
-Copy the environment template and replace only the Supabase placeholders with
-your project's real values:
+| Checkpoint | Result |
+|---|---:|
+| Catalogue pages followed | 3 |
+| Unique product URLs discovered | 60 |
+| Valid records written | 60 |
+| Invalid records | 0 |
+| Failed pages | 0 |
+| Cached pages on rerun | 63 |
+| Automated tests | 32 passing |
 
-```bash
-cp .env.example .env
+## Pipeline
+
+```text
+classify target
+      ↓
+fetch politely → cache HTML
+      ↓
+follow 3 catalogue pages
+      ↓
+discover + deduplicate 60 URLs
+      ↓
+extract → normalize → validate
+      ↓
+books.json / errors.json
+      ↓
+run-report.json
 ```
 
-```dotenv
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your-anon-or-publishable-key
+Each stage is small and independently testable. Networking is isolated in the
+fetcher; parsers and models remain deterministic and make no HTTP requests.
+
+## Quick start
+
+### Prerequisites
+
+- Python 3.10 or newer
+- Internet access for the first run only
+
+From the repository root on Windows:
+
+```powershell
+cd scraper
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m src.main
 ```
 
-The `.env` file is ignored by Git. Passwords are sent directly to Supabase Auth;
-the API never stores or hashes them.
+On macOS or Linux, replace `.\.venv\Scripts\python.exe` with
+`.venv/bin/python`.
 
-## Start the stack
+A successful run ends with:
 
-Docker with Compose is the only prerequisite. From a clean clone:
-
-```bash
-docker compose up --build
+```text
+catalogue_pages=3 discovered=60 unique_urls=60 valid_records=60 invalid_records=0 failed_pages=0
 ```
 
-Open Swagger UI at <http://127.0.0.1:8000/docs>. The API connects to the `db`
-service, creates the `tasks` table automatically, and inserts three examples
-only when the table is empty.
+## Outputs
 
-The environment file supplies these development settings:
+The command creates or replaces the following files under `scraper/output/`:
 
-| Variable | Purpose |
+| File | Purpose |
 |---|---|
-| `POSTGRES_USER` | PostgreSQL login used by the stack |
-| `POSTGRES_PASSWORD` | PostgreSQL password used by the stack |
-| `POSTGRES_DB` | Database created by the official PostgreSQL image |
-| `DATABASE_URL` | Psycopg connection URL; its Compose host is `db` |
-| `SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_KEY` | Supabase anon/publishable key; never `service_role` |
+| `books.json` | Validated records only; expected count is 60 |
+| `errors.json` | Rejected candidates with validation reasons |
+| `run-report.json` | Timing, network/cache, record, and failure counters |
 
-`.env.example` contains runnable PostgreSQL defaults and safe Supabase
-placeholders. Copy it to the git-ignored `.env` file, add real Supabase values,
-and never commit those credentials.
+Generated output and cached HTML remain local and are ignored by Git. A
+[representative cached-run report](scraper/output/sample-run-report.json) is
+committed for review.
 
-## Endpoints
+## Record contract
 
-| Method | Path | Purpose | Success |
-|---|---|---|---|
-| GET | `/` | Show API metadata | 200 |
-| GET | `/health` | Check API health | 200 |
-| GET | `/tasks` | List tasks | 200 |
-| GET | `/tasks/{task_id}` | Get one task | 200 |
-| POST | `/tasks` | Create a task | 201 |
-| PUT | `/tasks/{task_id}` | Update a task | 200 |
-| DELETE | `/tasks/{task_id}` | Delete a task | 204 |
-| POST | `/auth/signup` | Create a Supabase user | 201 |
-| POST | `/auth/login` | Return access and refresh tokens | 200 |
-| POST | `/auth/logout` | Sign out the authenticated user | 204 |
-| GET | `/public/info` | Read public information | 200 |
-| GET | `/protected/profile` | Read safe authenticated-user data | 200 |
-| GET | `/protected/dashboard` | Read a second protected resource | 200 |
-
-Unknown task IDs return JSON `404` responses. Invalid POST or PUT bodies return
-JSON `400` responses.
-
-Signup and login require non-empty `email` and `password` JSON fields. Invalid
-login credentials return JSON `401`. Protected routes require exactly:
-
-```http
-Authorization: Bearer <access_token>
+```json
+{
+  "title": "A Light in the Attic",
+  "product_url": "https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html",
+  "price_text": "£51.77",
+  "price_gbp": 51.77,
+  "availability_text": "In stock (22 available)",
+  "rating_text": "Three",
+  "description": "A collection of poems...",
+  "source_page": "https://books.toscrape.com/",
+  "fetched_at": "2026-08-13T14:19:17.260374Z"
+}
 ```
 
-Missing, malformed, invalid, tampered, or expired tokens return JSON `401`.
-Signup behavior depends on the project's **Confirm email** setting: when it is
-enabled, confirm the email before logging in.
+`product_url` is the canonical identity. `description` may be `null`, while
+`price_text`, `source_page`, and `fetched_at` preserve the original value and
+provenance.
 
-## Authentication flow
+## Politeness and resilience
 
-1. `POST /auth/signup` with an email and password.
-2. `POST /auth/login` and copy `access_token` from the response.
-3. Open <http://127.0.0.1:8000/docs>, select **Authorize**, and paste only the
-   access token into the HTTP Bearer field.
-4. Call `/protected/profile` or `/protected/dashboard`; protected operations
-   show lock icons in Swagger UI.
-5. Call `POST /auth/logout` with the same Bearer authentication.
+- Sends an honest `ThePoliteScraper` User-Agent.
+- Applies a 15-second timeout and waits at least 0.5 seconds before every real
+  request.
+- Parses content only after HTTP 200 and stores successful HTML as UTF-8.
+- Retries timeouts and 5xx responses once; never retries 403 or 404.
+- Reuses cached pages instead of refetching them.
+- Handles detail pages independently and records the failed URL and reason.
+- Rebuilds outputs on every run and deduplicates by canonical `product_url`.
 
-Example login:
+## Testing
 
-```bash
-curl -X POST http://127.0.0.1:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"person@example.com","password":"your-password"}'
+Run the complete deterministic suite from `scraper/`:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q --basetemp=.tmp\pytest
 ```
 
-For example:
+Coverage focuses on the highest-risk behavior: price normalization, relative
+URL resolution, duplicate removal, missing descriptions, malformed records,
+cache reuse, retry boundaries, failure isolation, report accuracy, and the
+60-good-record fake-URL scenario.
 
-```bash
-curl -i -X POST http://127.0.0.1:8000/tasks \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Ship containerized API"}'
+## Project structure
+
+```text
+scraper/
+├── src/
+│   ├── main.py       # CLI entry point
+│   ├── fetcher.py    # HTTP safeguards, retries, and cache
+│   ├── parser.py     # Catalogue and detail-page parsing
+│   ├── models.py     # Normalization and Pydantic schema
+│   └── pipeline.py   # Orchestration, storage, and reporting
+├── tests/
+├── output/
+├── requirements.txt
+└── README.md
 ```
 
-The response is HTTP `201 Created` with the generated ID, title, and
-`"done": false`.
+## Target classification and ethics
 
-## PostgreSQL proof
+[Books to Scrape](https://books.toscrape.com/) explicitly identifies itself as
+a scraping demo. Its `/robots.txt` endpoint returned HTTP 404 when checked on
+2026-08-13, meaning no robots directives were published at that location. The
+absence of a robots file is not treated as permission for broad crawling: this
+implementation remains limited to catalogue pages 1–3 and their 60 products.
 
-Inspect the same rows directly in the database container:
+I will not reuse this code on another site without checking its rules and terms
+first. The scraper does not access authentication walls, bypass blocks, collect
+personal data, or execute scraped content.
 
-```bash
-docker compose exec db psql -U tasks_user -d tasks \
-  -c "SELECT id, title, done FROM tasks ORDER BY id;"
-```
+## Limitations
 
-![PostgreSQL rows queried with psql](docs/postgres-psql.png)
+The selectors intentionally target the current Books to Scrape HTML structure;
+a redesign may require parser updates. Browser automation is unnecessary because
+all required data is present in server-rendered HTML.
 
-The captured query returned the same three initial tasks exposed by
-`GET /tasks`.
+## Earlier repository work
 
-## Persistence
-
-PostgreSQL stores its data in the Compose named volume `taskdata`. Create or
-change tasks, then restart the entire stack:
-
-```bash
-docker compose down
-docker compose up
-```
-
-The rows remain because `docker compose down` removes containers and the
-network, but not the named volume. Use `docker compose down -v` only when you
-intentionally want to delete local database data.
+The `app/`, `compose.yaml`, and related root-level tests contain an earlier
+FastAPI/PostgreSQL CRUD exercise with Supabase authentication. They remain in
+the history and repository, but are independent of the scraper under
+`scraper/`.

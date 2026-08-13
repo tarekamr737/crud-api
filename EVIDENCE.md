@@ -1,5 +1,21 @@
 # Evidence
 
+## W5 A9 — Professional README and global skills
+
+- Replaced the outdated root API-only README with a professional scraper
+  overview covering verified results, architecture, setup, outputs, schema,
+  politeness, resilience, testing, structure, ethics, limitations, and the
+  earlier API work retained in the repository.
+- Installed current upstream `supabase` 0.1.2 and
+  `supabase-postgres-best-practices` 1.1.1 into
+  `C:\Users\tarek\.codex\skills`; `quick_validate.py` returned `Skill is
+  valid!` for both global folders.
+- Removed the two now-redundant repository-scoped skill bundles and
+  `skills-lock.json` only after the global validations passed.
+- The post-change scraper regression returned `32 passed in 0.48s`;
+  `git diff --check` passed, no real `.env` file is tracked, and the tracked
+  source secret-pattern audit returned zero matching files.
+
 ## W5 A9 — Final core acceptance
 
 - `..\.venv\Scripts\python.exe -m pytest -q --basetemp=.tmp\pytest`

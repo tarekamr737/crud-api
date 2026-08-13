@@ -1,5 +1,12 @@
 # Build Log
 
+## W5 A9 — Global skill promotion
+
+- Installed fresh official skills from `supabase/agent-skills` instead of
+  copying the locked repository snapshots because their hashes differed; both
+  current upstream versions validated successfully before the local copies
+  were removed.
+
 ## W5 A9 — Live encoding correction
 
 - The first full live run fetched/cached all 60 detail pages but normalized
