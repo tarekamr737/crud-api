@@ -9,11 +9,11 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from src.llm.client import complete
+from src.llm.client import LLMProviderTimeoutError, complete
+from src.llm.config import PROMPT_VERSION
 from src.llm.schema import Category, SuggestedTeam, TriageResult, Urgency
 
 
-PROMPT_VERSION = "triage-v1"
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / f"{PROMPT_VERSION}.md"
 QUARANTINE_PATH = Path(__file__).resolve().parents[2] / "logs" / "quarantine.jsonl"
 
@@ -24,6 +24,10 @@ class LLMUnavailableError(RuntimeError):
 
 class LLMOutputInvalidError(RuntimeError):
     """Raised when the model remains invalid after one repair."""
+
+
+class LLMTimeoutError(RuntimeError):
+    """Raised when all provider timeout attempts are exhausted."""
 
 
 class OutputValidationFailure(ValueError):
@@ -100,6 +104,8 @@ def quarantine_failure(
 
 def triage(text: str) -> TriageResult:
     """Return a deterministic stub or one validated provider result."""
+    if os.getenv("LLM_ENABLED", "true").lower() == "false":
+        raise LLMUnavailableError("LLM calls are disabled")
     if os.getenv("LLM_STUB", "0") == "1":
         return TriageResult(
             category=Category.OTHER,
@@ -118,6 +124,8 @@ def triage(text: str) -> TriageResult:
     ]
     try:
         raw_output = complete(messages)
+    except LLMProviderTimeoutError as error:
+        raise LLMTimeoutError("The LLM provider timed out.") from error
     except Exception as error:
         raise LLMUnavailableError("The LLM triage provider is not available.") from error
 
@@ -125,7 +133,12 @@ def triage(text: str) -> TriageResult:
         return parse_result(raw_output)
     except OutputValidationFailure as first_error:
         try:
-            repaired_output = complete(repair_messages(raw_output, first_error))
+            repaired_output = complete(
+                repair_messages(raw_output, first_error),
+                repair_count=1,
+            )
+        except LLMProviderTimeoutError as error:
+            raise LLMTimeoutError("The LLM provider timed out.") from error
         except Exception as error:
             raise LLMUnavailableError("The LLM triage provider is not available.") from error
 

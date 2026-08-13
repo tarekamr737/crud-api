@@ -5,7 +5,12 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, status
 
 from src.llm.schema import TriageRequest, TriageResult
-from src.llm.service import LLMOutputInvalidError, LLMUnavailableError, triage
+from src.llm.service import (
+    LLMOutputInvalidError,
+    LLMTimeoutError,
+    LLMUnavailableError,
+    triage,
+)
 
 
 router = APIRouter()
@@ -19,6 +24,11 @@ def triage_message(payload: TriageRequest) -> TriageResult:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Model output did not match the required schema",
+        ) from None
+    except LLMTimeoutError:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="LLM provider timed out",
         ) from None
     except LLMUnavailableError:
         raise HTTPException(

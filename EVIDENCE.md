@@ -1,5 +1,14 @@
 # Evidence
 
+## Week 7 Stage 4 — Timeout, retries, logging, and kill switch
+
+- `.venv\Scripts\python.exe -m pytest tests\test_llm_client.py tests\test_llm_retry.py tests\test_triage.py tests\test_triage_schema.py tests\test_triage_prompt.py -q --basetemp=.tmp\pytest-w7-stage4` returned `27 passed in 1.85s`.
+- Client configuration tests prove `timeout == 30.0` and SDK `max_retries == 0`; custom tests prove 1s/2s exponential delays, jitter, numeric `Retry-After`, and three attempts total for timeout/429/5xx.
+- Parameterized 400, 401, and 403 tests each made exactly one provider attempt with no sleep. A live request using a deliberately wrong process-only key emitted exactly one structured call log and returned `status=401`, proving no hidden retry.
+- Every mocked provider attempt emitted one parseable JSON line containing exactly prompt version, model, input tokens, output tokens, duration milliseconds, and repair count; successful usage recorded `11` input and `7` output tokens.
+- `LLM_ENABLED=false` took precedence over `LLM_STUB=1`, returned safe HTTP 503, and left the completion mock uncalled. Exhausted timeout mapped to safe 504; other provider failure mapped to safe 503.
+- The final Stage 4 triage/client/auth regression returned `44 passed in 1.89s`; `compileall` and `git diff --check` also passed.
+
 ## Week 7 Stage 3 — Parse, repair once, and quarantine
 
 - `.venv\Scripts\python.exe -m pytest tests\test_triage.py tests\test_triage_schema.py tests\test_triage_prompt.py tests\test_llm_client.py -q --basetemp=.tmp\pytest-w7-stage3` returned `18 passed in 1.53s`.

@@ -16,6 +16,8 @@ def test_client_uses_only_llm_environment(monkeypatch: pytest.MonkeyPatch) -> No
     client = create_client()
 
     assert str(client.base_url) == "https://openrouter.ai/api/v1/"
+    assert client.max_retries == 0
+    assert client.timeout == 30.0
     assert configured_model() == "google/gemma-4-26b-a4b-it:free"
 
 

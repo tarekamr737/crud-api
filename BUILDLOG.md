@@ -1,5 +1,10 @@
 # Build Log
 
+## Week 7 Stage 4
+
+- Centralized `triage-v1`, the 30-second timeout, and the three-attempt limit in immutable configuration. The client logs each actual HTTP attempt before any retry sleep so `duration_ms` measures provider-call time rather than backoff time.
+- `Retry-After` is treated as a minimum delay over exponential 1s/2s backoff plus jitter. General connection/configuration errors and HTTP 400/401/403 fail immediately; only timeout, 429, and 5xx enter the loop.
+
 ## Week 7 Stage 3
 
 - Kept parse/schema errors as safe field/type summaries that exclude invalid input values. The repair request contains the broken output and that safe error as JSON-encoded user data, while HTTP responses expose only a fixed 422 message.
