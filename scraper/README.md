@@ -37,7 +37,8 @@ The command creates or replaces:
 - `output/run-report.json` — timing, cache, result, and failure counters
 
 HTML is cached under `cache/`. Later runs reuse it and do not append duplicate
-records.
+records. Generated run files and cached HTML are ignored by Git; the repository
+contains only `output/sample-run-report.json` as representative output.
 
 ## Target classification
 

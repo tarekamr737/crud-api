@@ -1,4 +1,7 @@
 cache/
+output/books.json
+output/errors.json
+output/run-report.json
 __pycache__/
 .pytest_cache/
 .tmp/

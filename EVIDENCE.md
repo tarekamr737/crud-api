@@ -1,5 +1,16 @@
 # Evidence
 
+## W5 A9 — Git/cache hygiene
+
+- `git check-ignore` matched all three generated JSON outputs and the cache;
+  `git ls-files -- scraper/cache` returned no tracked cache files.
+- `git status --short -- scraper` showed only the intentional `.gitignore` and
+  README edits plus `output/sample-run-report.json`; the 115 KB live
+  `books.json`, empty `errors.json`, live report, and 63 HTML pages remain local
+  and ignored on `D:`.
+- The committed representative report parses as JSON and records 60 valid
+  records and 63 cache hits.
+
 ## W5 A9 — Complete README
 
 - A content checklist found every required section in `scraper/README.md` and
