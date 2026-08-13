@@ -1,5 +1,16 @@
 # Evidence
 
+## W5 A9 — Raw book extraction
+
+- `..\.venv\Scripts\python.exe -m pytest tests\test_parser.py -q
+  --basetemp=.tmp\pytest` returned `3 passed`.
+- Tests prove exact extraction of all eight raw fields, `None` for a missing
+  description, and an explicit error for a missing required selector.
+- A cached-catalogue/live-detail check printed `raw_fields=8
+  title_present=True rating=Three description_present=True pages_fetched=1
+  cache_hits=3`, validating the selectors against the target's real HTML while
+  making only one new request.
+
 ## W5 A9 — Book URL discovery
 
 - `..\.venv\Scripts\python.exe -m pytest tests\test_pipeline.py -q
