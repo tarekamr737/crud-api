@@ -1,5 +1,18 @@
 # Evidence
 
+## W5 A9 — Live 60-book run and rerun
+
+- The first successful cached live run printed `catalogue_pages=3
+  discovered=60 unique_urls=60 valid_records=60 invalid_records=0
+  failed_pages=0`.
+- An immediate second successful CLI run printed the same counts. Direct JSON
+  checks returned `books=60 unique=60 errors=0 pages_fetched=0 cache_hits=63
+  valid=60 failed=0`, proving every scoped page came from cache and no duplicate
+  or invalid record entered output.
+- `..\.venv\Scripts\python.exe -m pytest tests\test_fetcher.py -q
+  --basetemp=.tmp\pytest` returned `9 passed`, including the regression test
+  that successful target responses are decoded as UTF-8 before caching.
+
 ## W5 A9 — Broken URL acceptance
 
 - `..\.venv\Scripts\python.exe -m pytest

@@ -10,6 +10,7 @@ from src.fetcher import DEFAULT_TIMEOUT, FetchError, FetchStats, fetch, fetch_ht
 class FakeResponse:
     status_code: int
     text: str = "<html>ok</html>"
+    encoding: str | None = None
 
 
 class FakeSession:
@@ -118,3 +119,13 @@ def test_403_and_404_are_never_retried(status_code: int) -> None:
         fetch_http("https://example.test", session=session, sleep=lambda _: None)
 
     assert session.calls == 1
+
+
+def test_success_forces_the_targets_utf8_encoding() -> None:
+    response = FakeResponse(200, "<p>£51.77</p>")
+    session = FakeSession(response)
+
+    assert fetch_http("https://example.test", session=session, sleep=lambda _: None) == (
+        "<p>£51.77</p>"
+    )
+    assert response.encoding == "utf-8"

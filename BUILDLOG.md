@@ -1,5 +1,16 @@
 # Build Log
 
+## W5 A9 — Live encoding correction
+
+- The first full live run fetched/cached all 60 detail pages but normalized
+  zero records because `requests` defaulted the target's charset-less HTML to
+  ISO-8859-1, turning the UTF-8 pound bytes into `U+00C2 U+00A3`. The run
+  honestly reported 60 page failures instead of storing bad data.
+- The designated site serves UTF-8 HTML, so successful responses now set UTF-8
+  before reading `.text`. Repaired the already cached HTML in place from the
+  reversible Latin-1 mojibake to UTF-8 rather than making 63 unnecessary repeat
+  requests.
+
 ## W5 A9 — Canonical idempotency
 
 - Chose stable first-seen wins for duplicate `product_url` candidates because

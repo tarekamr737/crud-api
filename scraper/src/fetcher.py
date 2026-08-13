@@ -21,6 +21,7 @@ MIN_REQUEST_DELAY = 0.5
 class ResponseLike(Protocol):
     status_code: int
     text: str
+    encoding: str | None
 
 
 class SessionLike(Protocol):
@@ -63,6 +64,7 @@ def fetch_http(
             raise FetchError(f"{url}: request failed: {error}") from error
 
         if response.status_code == 200:
+            response.encoding = "utf-8"
             return response.text
         if 500 <= response.status_code <= 599 and attempt == 0:
             continue
