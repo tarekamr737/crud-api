@@ -10,6 +10,31 @@
 [![Supabase](https://img.shields.io/badge/Auth-Supabase-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com/)
 [![Scraper tests](https://img.shields.io/badge/scraper_tests-32%20passing-2EA44F)](scraper/tests)
 
+## LLM support triage (Week 7)
+
+Run the API in deterministic stub mode from PowerShell:
+
+```powershell
+$env:LLM_STUB="1"
+.\.venv\Scripts\python.exe -m uvicorn app.main:app
+```
+
+Valid request:
+
+```powershell
+curl.exe -s -X POST http://127.0.0.1:8000/triage -H "Content-Type: application/json" -d '{"text":"I was charged twice."}'
+```
+
+```json
+{"category":"other","urgency":"low","suggested_team":"support","confidence":0.25,"reason":"Stub mode returns a safe deterministic result."}
+```
+
+Invalid request (returns HTTP 400 and names `text`):
+
+```powershell
+curl.exe -i -X POST http://127.0.0.1:8000/triage -H "Content-Type: application/json" -d '{"text":""}'
+```
+
 ## Repository overview
 
 | Project | Purpose | Main technologies | Entry point |

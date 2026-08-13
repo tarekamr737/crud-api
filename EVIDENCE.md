@@ -1,5 +1,13 @@
 # Evidence
 
+## Week 7 Stage 1 — Schema, endpoint, and stub mode
+
+- `.venv\Scripts\python.exe -m pytest tests\test_triage.py tests\test_triage_schema.py tests\test_llm_client.py -q --basetemp=.tmp\pytest-w7-stage1` returned `12 passed in 1.48s`.
+- The endpoint test made two different valid requests with `LLM_STUB=1`, received the same schema-valid HTTP 200 JSON, and proved the OpenAI completion method was never called.
+- Missing, empty, oversized, extra-field, and null bodies returned HTTP 400 naming the offending field while the provider method remained uncalled.
+- `.venv\Scripts\python.exe -m pytest tests\test_auth.py tests\test_auth_dependency.py -q --basetemp=.tmp\pytest-w7-stage1-auth` returned `17 passed in 0.89s`, preserving the existing auth validation behavior.
+- `README.md` contains runnable PowerShell startup plus valid and invalid `curl.exe` examples for `/triage`.
+
 ## Week 7 Stage 0 — Provider readiness
 
 - `.venv\Scripts\python.exe -m pytest tests\test_llm_client.py -q --basetemp=.tmp\pytest-w7-stage0` returned `3 passed in 0.71s`.

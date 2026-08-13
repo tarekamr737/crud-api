@@ -1,5 +1,10 @@
 # Build Log
 
+## Week 7 Stage 1
+
+- Scoped field-specific validation errors to `/triage` so the new contract names `text` or an unexpected field without changing the established CRUD/auth `{"error":"Invalid request"}` behavior.
+- Kept the unfinished real-model branch behind a safe 503 while Stage 1 exercises only `LLM_STUB=1`; the provider method is patched in tests to prove stub and invalid-input paths make zero model calls.
+
 ## Week 7 Stage 0
 
 - Used the user-selected `google/gemma-4-26b-a4b-it:free` model instead of the architecture document's older `openrouter/free` placeholder.
