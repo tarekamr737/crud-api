@@ -1,5 +1,15 @@
 # Evidence
 
+## W5 A9 — Page-level fault isolation
+
+- `..\.venv\Scripts\python.exe -m pytest tests\test_pipeline.py -q
+  --basetemp=.tmp\pytest` returned `8 passed`.
+- The fault-isolation test processes good → HTTP 404 → good detail URLs,
+  verifies all three were attempted in order, receives both good normalized
+  records, and receives one failure containing the broken URL and reason.
+- The detail boundary catches only expected fetch, parse/normalization, and
+  cache I/O failures; it logs the affected URL and continues safely.
+
 ## W5 A9 — Canonical idempotency
 
 - `..\.venv\Scripts\python.exe -m pytest tests\test_pipeline.py -q

@@ -1,9 +1,11 @@
 import json
 
+from src.fetcher import FetchError
 from src.models import normalize_book
 from src.parser import parse_product_urls
 from src.pipeline import (
     START_URL,
+    collect_book_records,
     deduplicate_records,
     deduplicate_urls,
     discover_book_urls,
@@ -123,3 +125,35 @@ def test_rerun_rebuilds_one_record_per_canonical_product_url(tmp_path) -> None:
 
     assert first_output == second_output
     assert len(json.loads(second_output)) == 1
+
+
+def test_one_failed_detail_page_does_not_stop_later_books() -> None:
+    urls = [
+        "https://books.toscrape.com/catalogue/book-1/index.html",
+        "https://books.toscrape.com/catalogue/broken/index.html",
+        "https://books.toscrape.com/catalogue/book-2/index.html",
+    ]
+    source = "https://books.toscrape.com/"
+    calls: list[str] = []
+
+    def fake_fetch(url: str) -> str:
+        calls.append(url)
+        if url.endswith("broken/index.html"):
+            raise FetchError(f"{url}: HTTP 404")
+        return """
+        <div class="product_main">
+          <h1>Book</h1><p class="price_color">£12.34</p>
+          <p class="instock availability">In stock</p>
+          <p class="star-rating Four"></p>
+        </div>
+        """
+
+    records, failures = collect_book_records(
+        [(url, source) for url in urls],
+        fake_fetch,
+        timestamp_factory=lambda: "2026-08-13T10:00:00+00:00",
+    )
+
+    assert calls == urls
+    assert [record["product_url"] for record in records] == [urls[0], urls[2]]
+    assert failures == [{"url": urls[1], "reason": f"{urls[1]}: HTTP 404"}]

@@ -1,13 +1,15 @@
 """Scraping pipeline orchestration."""
 
 from collections.abc import Callable
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 
 from pydantic import ValidationError
 
-from .models import BookRecord
-from .parser import parse_next_url, parse_product_urls
+from .fetcher import FetchError
+from .models import BookRecord, normalize_book
+from .parser import parse_book, parse_next_url, parse_product_urls
 
 
 START_URL = "https://books.toscrape.com/"
@@ -45,12 +47,20 @@ def deduplicate_urls(urls: list[str]) -> list[str]:
 
 def discover_book_urls(pages: list[tuple[str, str]]) -> list[str]:
     """Collect and deduplicate product links from fetched catalogue pages."""
-    discovered = [
-        product_url
-        for page_url, html in pages
-        for product_url in parse_product_urls(html, page_url)
-    ]
-    return deduplicate_urls(discovered)
+    return [product_url for product_url, _ in discover_book_sources(pages)]
+
+
+def discover_book_sources(pages: list[tuple[str, str]]) -> list[tuple[str, str]]:
+    """Return each unique product URL with its first source catalogue page."""
+    discovered: list[tuple[str, str]] = []
+    seen_urls: set[str] = set()
+    for source_page, html in pages:
+        for product_url in parse_product_urls(html, source_page):
+            if product_url in seen_urls:
+                continue
+            seen_urls.add(product_url)
+            discovered.append((product_url, source_page))
+    return discovered
 
 
 def deduplicate_records(records: list[dict[str, object]]) -> list[dict[str, object]]:
@@ -65,6 +75,38 @@ def deduplicate_records(records: list[dict[str, object]]) -> list[dict[str, obje
             seen_urls.add(product_url)
         unique_records.append(record)
     return unique_records
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def collect_book_records(
+    book_sources: list[tuple[str, str]],
+    fetch_page: Callable[[str], str],
+    *,
+    timestamp_factory: Callable[[], str] = utc_now,
+) -> tuple[list[dict[str, object]], list[dict[str, str]]]:
+    """Fetch and transform each detail page without aborting later books."""
+    records: list[dict[str, object]] = []
+    failures: list[dict[str, str]] = []
+
+    for product_url, source_page in book_sources:
+        try:
+            html = fetch_page(product_url)
+            raw_record = parse_book(
+                html,
+                product_url=product_url,
+                source_page=source_page,
+                fetched_at=timestamp_factory(),
+            )
+            records.append(normalize_book(raw_record))
+        except (FetchError, ValueError, OSError) as error:
+            reason = str(error)
+            failures.append({"url": product_url, "reason": reason})
+            print(f"FAILED {product_url}: {reason}")
+
+    return records, failures
 
 
 def validate_and_store(
