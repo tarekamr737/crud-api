@@ -1,5 +1,15 @@
 # Evidence
 
+## Week 7 Stage 5 — Eval, README, and release readiness
+
+- `.venv\Scripts\python.exe evals\run_evals.py` made real calls with production retries only and returned `score=100.0`, `passed_checks=24`, `total_checks=24`, `failed_case_ids=[]`, date `2026-08-13`, and prompt `triage-v1`.
+- All eight labelled cases passed: normal billing, clear bug, feature request, generic other, urgent outage, ambiguous, prompt injection, and empty-ish valid input.
+- A successful eval call logged 550 input tokens, 38 output tokens, 2,327 ms, and repair count 0; README records that exact structured line and estimates 5.88 million tokens and $0 provider charge at 10,000 daily requests on the selected free route.
+- The README's required sections were present in the mandated order and include a runnable real-model curl with an exact observed response, job card, provider/model settings, real eval result, cost log, daily estimate, and one honest next improvement.
+- The Stage 5 regression returned `46 passed in 1.89s`; `compileall` passed for `src`, `app`, and `evals`, the eval fixture count was exactly 8, and `git diff --check` passed.
+- `.env` is ignored and untracked, its history query returned no commits, and the tracked-source scan found no OpenRouter `sk-or-v1-` token.
+- The Docker image now copies `src`, `prompts`, and `logs` alongside `app`, making the triage route and versioned prompt available in the existing Compose runtime.
+
 ## Week 7 Stage 4 — Timeout, retries, logging, and kill switch
 
 - `.venv\Scripts\python.exe -m pytest tests\test_llm_client.py tests\test_llm_retry.py tests\test_triage.py tests\test_triage_schema.py tests\test_triage_prompt.py -q --basetemp=.tmp\pytest-w7-stage4` returned `27 passed in 1.85s`.

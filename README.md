@@ -1,45 +1,81 @@
-# Python Backend & Data Pipeline Portfolio
+# LLM Support Triage API
 
-> Two independently runnable Python projects in one repository: a
-> PostgreSQL-backed Task API with Supabase authentication, and a polite,
-> deterministic web-scraping pipeline.
+This FastAPI endpoint turns one unstructured support message into a validated category, urgency, team, confidence, and one-sentence reason. Model text is treated as untrusted: the service validates it, repairs it once when necessary, and never exposes raw completions.
 
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Supabase](https://img.shields.io/badge/Auth-Supabase-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com/)
-[![Scraper tests](https://img.shields.io/badge/scraper_tests-32%20passing-2EA44F)](scraper/tests)
+## Run it and call `/triage`
 
-## LLM support triage (Week 7)
-
-Run the API in deterministic stub mode from PowerShell:
+From a fresh clone, copy the environment template, fill `SUPABASE_URL`, `SUPABASE_KEY`, and `LLM_API_KEY` in the ignored `.env`, then start the existing API and database:
 
 ```powershell
-$env:LLM_STUB="1"
-.\.venv\Scripts\python.exe -m uvicorn app.main:app
+Copy-Item .env.example .env
+docker compose up --build -d
 ```
 
-Valid request:
+Make a real-model request:
 
 ```powershell
-curl.exe -s -X POST http://127.0.0.1:8000/triage -H "Content-Type: application/json" -d '{"text":"I was charged twice."}'
+curl.exe -s -X POST http://127.0.0.1:8000/triage -H "Content-Type: application/json" -d '{"text":"I was charged twice for my monthly plan."}'
 ```
+
+Exact response from a real `google/gemma-4-26b-a4b-it:free` call:
 
 ```json
-{"category":"other","urgency":"low","suggested_team":"support","confidence":0.25,"reason":"Stub mode returns a safe deterministic result."}
+{"category":"billing","urgency":"normal","suggested_team":"billing","confidence":1.0,"reason":"The user is reporting a duplicate charge for their subscription."}
 ```
 
-Invalid request (returns HTTP 400 and names `text`):
+An empty input returns HTTP 400 and identifies `text` before any model call:
 
 ```powershell
 curl.exe -i -X POST http://127.0.0.1:8000/triage -H "Content-Type: application/json" -d '{"text":""}'
 ```
 
-## Repository overview
+## Job card
+
+The concise product/problem, user, provider, success, safety, and scope decisions are in [`JOB-CARD.md`](JOB-CARD.md). The endpoint is deliberately one-shot triage—not chat, memory, RAG, an agent, or a decision-maker for high-impact actions.
+
+## Provider, model, and three swap settings
+
+The implementation uses OpenRouter's OpenAI-compatible API and `google/gemma-4-26b-a4b-it:free`. Swap providers or models without code changes by setting exactly these three connection variables:
+
+```dotenv
+LLM_BASE_URL=https://openrouter.ai/api/v1
+LLM_API_KEY=your_openrouter_key
+LLM_MODEL=google/gemma-4-26b-a4b-it:free
+```
+
+Operational controls are `LLM_ENABLED=false` for an immediate zero-call 503 and `LLM_STUB=1` for deterministic zero-call development output. The real key belongs only in `.env`; never commit it or send confidential/personal data to a free provider.
+
+## Real eval score
+
+On 2026-08-13, prompt `triage-v1` scored **100.0% (24/24 key-field checks)** across exactly eight labelled billing, bug, feature, generic, outage, ambiguous, prompt-injection, and empty-ish cases. There were no failed case IDs.
+
+```powershell
+.\.venv\Scripts\python.exe evals\run_evals.py
+```
+
+## One-call cost log
+
+One successful real eval call emitted this stdout line:
+
+```json
+{"prompt_version":"triage-v1","model":"google/gemma-4-26b-a4b-it:free","input_tokens":550,"output_tokens":38,"duration_ms":2327,"repair_count":0}
+```
+
+## 10,000 requests/day estimate
+
+At the observed 588 tokens per successful request, 10,000 requests are approximately **5.88 million tokens/day**. The selected `:free` route has an estimated provider charge of **$0/day**, but its shared rate limits make it unsuitable for guaranteed 10,000-request daily throughput; any paid replacement should recalculate cost from its current input/output token prices.
+
+## What I would fix with another day
+
+I would add an explicitly approved fallback model and measure it against the same eight cases, because shared free-provider rate limits—not schema reliability—were the main observed operational weakness.
+
+---
+
+## Existing repository projects
 
 | Project | Purpose | Main technologies | Entry point |
 |---|---|---|---|
-| **Task API** | Persistent CRUD API with hosted authentication and protected routes | FastAPI, PostgreSQL, Supabase Auth, Docker Compose | `docker compose up --build` |
+| **Task API + LLM triage** | Persistent CRUD API, hosted authentication, and validated support routing | FastAPI, PostgreSQL, Supabase Auth, OpenRouter, Docker Compose | `docker compose up --build` |
 | **The Polite Scraper** | Collect and validate exactly 60 books from a public practice sandbox | Requests, Beautiful Soup, Pydantic, JSON cache | `python -m src.main` from `scraper/` |
 
 The projects share a repository but are operationally independent. The root
@@ -138,6 +174,11 @@ and inserts three sample tasks only when the table is empty.
 | `DATABASE_URL` | FastAPI | Psycopg connection string; Compose uses host `db` |
 | `SUPABASE_URL` | FastAPI | Hosted Supabase project URL |
 | `SUPABASE_KEY` | FastAPI | Publishable or legacy `anon` key |
+| `LLM_BASE_URL` | FastAPI | OpenAI-compatible provider base URL |
+| `LLM_API_KEY` | FastAPI | Provider key; keep only in ignored `.env` |
+| `LLM_MODEL` | FastAPI | Provider model identifier |
+| `LLM_ENABLED` | FastAPI | `false` disables all LLM calls with HTTP 503 |
+| `LLM_STUB` | FastAPI | `1` returns deterministic output with zero calls |
 
 `.env` is excluded from Git. `.env.example` contains only development defaults
 and placeholders.

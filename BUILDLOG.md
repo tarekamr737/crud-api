@@ -1,5 +1,11 @@
 # Build Log
 
+## Week 7 Stage 5
+
+- Scored only the three routing fields (`category`, `urgency`, `suggested_team`) across exactly eight hand-labelled cases; confidence and prose remain validated API fields but are not treated as exact-match classification labels.
+- The real eval encountered transient free-pool failures on three attempts, all recovered inside the production retry policy. The final result was 24/24 with no evaluator-side retry loop.
+- Added `python-dotenv` only so the standalone eval runner and Uvicorn's documented `--env-file` workflow can consume the ignored local configuration; Docker Compose continues to inject the same variables with `env_file`.
+
 ## Week 7 Stage 4
 
 - Centralized `triage-v1`, the 30-second timeout, and the three-attempt limit in immutable configuration. The client logs each actual HTTP attempt before any retry sleep so `duration_ms` measures provider-call time rather than backoff time.
