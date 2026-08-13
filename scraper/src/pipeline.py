@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 
-from .parser import parse_next_url
+from .parser import parse_next_url, parse_product_urls
 
 
 START_URL = "https://books.toscrape.com/"
@@ -31,3 +31,18 @@ def discover_catalogue_pages(
         current_url = next_url
 
     return pages
+
+
+def deduplicate_urls(urls: list[str]) -> list[str]:
+    """Keep one occurrence of each canonical URL in first-seen order."""
+    return list(dict.fromkeys(urls))
+
+
+def discover_book_urls(pages: list[tuple[str, str]]) -> list[str]:
+    """Collect and deduplicate product links from fetched catalogue pages."""
+    discovered = [
+        product_url
+        for page_url, html in pages
+        for product_url in parse_product_urls(html, page_url)
+    ]
+    return deduplicate_urls(discovered)

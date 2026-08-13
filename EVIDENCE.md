@@ -1,5 +1,16 @@
 # Evidence
 
+## W5 A9 — Book URL discovery
+
+- `..\.venv\Scripts\python.exe -m pytest tests\test_pipeline.py -q
+  --basetemp=.tmp\pytest` returned `5 passed`, including relative URL
+  resolution, stable duplicate removal, and a deterministic 60-book fixture.
+- A live run against the designated sandbox printed three `FETCH` lines and
+  `catalogue_pages=3 unique_urls=60 pages_fetched=3 cache_hits=0`; its assertion
+  proved all 60 discovered absolute product URLs were unique.
+- The three catalogue responses were cached only under the ignored
+  `scraper/cache/` directory on `D:`.
+
 ## W5 A9 — Catalogue traversal
 
 - `..\.venv\Scripts\python.exe -m pytest tests\test_pipeline.py -q

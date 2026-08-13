@@ -12,3 +12,12 @@ def parse_next_url(html: str, page_url: str) -> str | None:
     if link is None:
         return None
     return urljoin(page_url, str(link["href"]))
+
+
+def parse_product_urls(html: str, page_url: str) -> list[str]:
+    """Extract absolute product URLs from one catalogue page."""
+    soup = BeautifulSoup(html, "html.parser")
+    return [
+        urljoin(page_url, str(link["href"]))
+        for link in soup.select("article.product_pod h3 a[href]")
+    ]
