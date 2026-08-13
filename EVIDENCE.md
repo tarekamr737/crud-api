@@ -1,5 +1,17 @@
 # Evidence
 
+## W5 A9 — Run report
+
+- `..\.venv\Scripts\python.exe -m pytest tests\test_pipeline.py -q
+  --basetemp=.tmp\pytest` returned `9 passed`.
+- A deterministic full-pipeline test fetches three catalogue plus three detail
+  pages and reads `run-report.json` back from disk. It proves exact
+  `start_time`, `duration=2.5`, `pages_fetched=6`, `cache_hits=0`, three
+  catalogue/discovered/unique/valid counts, zero invalid/failed counts, and an
+  empty failure list.
+- `src.main` now invokes this orchestrator and prints the concise required run
+  summary without containing HTML selectors.
+
 ## W5 A9 — Retry policy
 
 - `..\.venv\Scripts\python.exe -m pytest tests\test_fetcher.py -q

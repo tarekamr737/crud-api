@@ -10,6 +10,7 @@ from src.pipeline import (
     deduplicate_urls,
     discover_book_urls,
     discover_catalogue_pages,
+    run_pipeline,
     validate_and_store,
 )
 
@@ -157,3 +158,56 @@ def test_one_failed_detail_page_does_not_stop_later_books() -> None:
     assert calls == urls
     assert [record["product_url"] for record in records] == [urls[0], urls[2]]
     assert failures == [{"url": urls[1], "reason": f"{urls[1]}: HTTP 404"}]
+
+
+def test_full_pipeline_writes_report_with_actual_counters(tmp_path) -> None:
+    site_root = "https://example.test/"
+    page_2 = "https://example.test/catalogue/page-2.html"
+    page_3 = "https://example.test/catalogue/page-3.html"
+    book_urls = [f"https://example.test/catalogue/book-{number}/index.html" for number in range(1, 4)]
+    html_by_url = {
+        site_root: (
+            f'<article class="product_pod"><h3><a href="catalogue/book-1/index.html">Book</a></h3></article>'
+            f'<li class="next"><a href="catalogue/page-2.html">next</a></li>'
+        ),
+        page_2: (
+            f'<article class="product_pod"><h3><a href="book-2/index.html">Book</a></h3></article>'
+            f'<li class="next"><a href="page-3.html">next</a></li>'
+        ),
+        page_3: '<article class="product_pod"><h3><a href="book-3/index.html">Book</a></h3></article>',
+    }
+    for number, url in enumerate(book_urls, start=1):
+        html_by_url[url] = f"""
+        <div class="product_main">
+          <h1>Book {number}</h1><p class="price_color">£12.34</p>
+          <p class="instock availability">In stock</p>
+          <p class="star-rating Four"></p>
+        </div>
+        """
+
+    report = run_pipeline(
+        cache_dir=tmp_path / "cache",
+        output_dir=tmp_path / "output",
+        start_url=site_root,
+        http_fetch=lambda url: html_by_url[url],
+        timestamp_factory=lambda: "2026-08-13T10:00:00+00:00",
+        monotonic=iter([10.0, 12.5]).__next__,
+    )
+
+    stored_report = json.loads(
+        (tmp_path / "output" / "run-report.json").read_text(encoding="utf-8")
+    )
+    assert report == stored_report
+    assert report == {
+        "start_time": "2026-08-13T10:00:00+00:00",
+        "duration": 2.5,
+        "pages_fetched": 6,
+        "cache_hits": 0,
+        "catalogue_pages": 3,
+        "discovered": 3,
+        "unique_urls": 3,
+        "valid_records": 3,
+        "invalid_records": 0,
+        "failed_pages": 0,
+        "failures": [],
+    }

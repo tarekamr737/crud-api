@@ -7,7 +7,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from .fetcher import FetchError
+from .fetcher import FetchError, FetchStats, fetch, fetch_http
 from .models import BookRecord, normalize_book
 from .parser import parse_book, parse_next_url, parse_product_urls
 
@@ -138,3 +138,65 @@ def validate_and_store(
         encoding="utf-8",
     )
     return valid_records, invalid_records
+
+
+def run_pipeline(
+    *,
+    cache_dir: Path,
+    output_dir: Path,
+    start_url: str = START_URL,
+    http_fetch: Callable[[str], str] = fetch_http,
+    timestamp_factory: Callable[[], str] = utc_now,
+    monotonic: Callable[[], float],
+) -> dict[str, object]:
+    """Run the complete core pipeline and always write an honest report."""
+    started_at = timestamp_factory()
+    started_clock = monotonic()
+    fetch_stats = FetchStats()
+    failures: list[dict[str, str]] = []
+    catalogue_pages: list[tuple[str, str]] = []
+    book_sources: list[tuple[str, str]] = []
+    valid_records: list[dict[str, object]] = []
+    invalid_records: list[dict[str, object]] = []
+
+    def fetch_page(url: str) -> str:
+        return fetch(
+            url,
+            cache_dir=cache_dir,
+            stats=fetch_stats,
+            http_fetch=http_fetch,
+        )
+
+    try:
+        catalogue_pages = discover_catalogue_pages(fetch_page, start_url=start_url)
+        book_sources = discover_book_sources(catalogue_pages)
+        normalized_records, page_failures = collect_book_records(
+            book_sources,
+            fetch_page,
+            timestamp_factory=timestamp_factory,
+        )
+        failures.extend(page_failures)
+        valid_records, invalid_records = validate_and_store(normalized_records, output_dir)
+    except (FetchError, ValueError, OSError) as error:
+        failures.append({"url": start_url, "reason": str(error)})
+        valid_records, invalid_records = validate_and_store([], output_dir)
+
+    report: dict[str, object] = {
+        "start_time": started_at,
+        "duration": round(monotonic() - started_clock, 3),
+        "pages_fetched": fetch_stats.pages_fetched,
+        "cache_hits": fetch_stats.cache_hits,
+        "catalogue_pages": len(catalogue_pages),
+        "discovered": len(book_sources),
+        "unique_urls": len(book_sources),
+        "valid_records": len(valid_records),
+        "invalid_records": len(invalid_records),
+        "failed_pages": len(failures),
+        "failures": failures,
+    }
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "run-report.json").write_text(
+        json.dumps(report, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    return report
