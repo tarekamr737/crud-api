@@ -1,5 +1,14 @@
 # Evidence
 
+## W5 A9 — Catalogue traversal
+
+- `..\.venv\Scripts\python.exe -m pytest tests\test_pipeline.py -q
+  --basetemp=.tmp\pytest` returned `2 passed`.
+- The traversal test starts at the site root, follows two different relative
+  `next` links, fetches pages 1–3 in order, and proves page 4 is not fetched.
+- A missing `next` link before the three-page scope is complete produces an
+  explicit error naming the expected limit.
+
 ## W5 A9 — HTML cache
 
 - `..\.venv\Scripts\python.exe -m pytest tests\test_fetcher.py -q
