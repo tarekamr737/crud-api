@@ -3,6 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator, model_validator
 from supabase_auth.errors import AuthError
+from src.routes.triage import router as triage_router
 
 from app.auth import get_access_token, get_current_user, supabase, unauthorized
 from app.repository import (
@@ -76,12 +77,28 @@ def task_not_found(task_id: int) -> JSONResponse:
 
 @app.exception_handler(RequestValidationError)
 async def validation_error_handler(request: object, exc: RequestValidationError) -> JSONResponse:
+    if getattr(getattr(request, "url", None), "path", None) == "/triage":
+        fields = [
+            str(location)
+            for error in exc.errors()
+            for location in error.get("loc", ())
+            if location != "body"
+        ]
+        field = fields[-1] if fields else "text"
+        return JSONResponse(status_code=400, content={"error": f"Invalid field: {field}"})
     return JSONResponse(status_code=400, content={"error": "Invalid request"})
+
+
+app.include_router(triage_router)
 
 
 @app.get("/", summary="Show API metadata")
 def read_root() -> dict[str, str | list[str]]:
-    return {"name": "Task API", "version": "1.0", "endpoints": ["/tasks"]}
+    return {
+        "name": "Task API",
+        "version": "1.0",
+        "endpoints": ["/tasks", "/triage", "/triage/jobs/{job_id}"],
+    }
 
 
 @app.get("/health", summary="Check API health")

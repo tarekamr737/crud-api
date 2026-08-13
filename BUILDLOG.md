@@ -1,5 +1,52 @@
 # Build Log
 
+## Async triage jobs
+
+- Used the existing PostgreSQL service as the durable queue and added one separate worker process instead of introducing Redis/Celery. This keeps submission fast while making state survive API restarts.
+- Required a client-provided `Idempotency-Key`; the database returns the original job only when its request hash matches, and rejects key reuse for different input with 409.
+- Used expiring leases plus lease-token-guarded updates because queue delivery is intentionally at least once. A stale worker may finish, but it cannot overwrite a result after another worker has reclaimed the job.
+- Kept terminal alerts as safe structured stdout events for the deployment log/alert pipeline; neither user text nor provider exception detail is included.
+- Replaced the pre-existing Docker-managed PostgreSQL volume with `./.data/postgres`, an ignored bind mount under the D: workspace, so material runtime data does not consume the full C: partition.
+- `docker compose config` expanded the ignored `.env` into diagnostic output, including the OpenRouter credential. No value entered a file or Git, but the key must be rotated because session output is exposure. Restricted the database to PostgreSQL settings and the worker to database/LLM settings so neither receives unrelated secrets.
+- The first D:-backed PostgreSQL initialization produced localhost-only `pg_hba.conf` rules, so worker/API containers were rejected. Set `POSTGRES_HOST_AUTH_METHOD=scram-sha-256` for password-authenticated Compose-network access and reinitialized only the disposable database created for this verification.
+
+## Week 7 Final audit
+
+- A literal Git pickaxe search for `sk-or-v1-` initially matched the audit wording in `EVIDENCE.md`, not a credential. Rechecked current and historical diffs with a key-shaped regex requiring at least ten suffix characters; both were clean.
+- Avoided Docker for the clean-snapshot proof because its engine storage could use the full C: partition. Exported committed `HEAD` under the repository's ignored `.tmp`, and redirected the fresh environment, pip cache, pytest base temp, `TEMP`, and `TMP` to D:.
+
+## Week 7 Stage 5
+
+- Scored only the three routing fields (`category`, `urgency`, `suggested_team`) across exactly eight hand-labelled cases; confidence and prose remain validated API fields but are not treated as exact-match classification labels.
+- The real eval encountered transient free-pool failures on three attempts, all recovered inside the production retry policy. The final result was 24/24 with no evaluator-side retry loop.
+- Added `python-dotenv` only so the standalone eval runner and Uvicorn's documented `--env-file` workflow can consume the ignored local configuration; Docker Compose continues to inject the same variables with `env_file`.
+- The configured remote redirected from its legacy `crud-api` URL to the canonical `Back-End-AI-Engineering-FlyRank-Intern` repository. Kept the configured remote intact because Git followed the redirect safely and GitHub resolved the canonical PR target.
+
+## Week 7 Stage 4
+
+- Centralized `triage-v1`, the 30-second timeout, and the three-attempt limit in immutable configuration. The client logs each actual HTTP attempt before any retry sleep so `duration_ms` measures provider-call time rather than backoff time.
+- `Retry-After` is treated as a minimum delay over exponential 1s/2s backoff plus jitter. General connection/configuration errors and HTTP 400/401/403 fail immediately; only timeout, 429, and 5xx enter the loop.
+
+## Week 7 Stage 3
+
+- Kept parse/schema errors as safe field/type summaries that exclude invalid input values. The repair request contains the broken output and that safe error as JSON-encoded user data, while HTTP responses expose only a fixed 422 message.
+- Quarantine records bound user text to 500 characters and raw completion text to 2,000 characters, replace non-printable input characters, and remain ignored JSONL runtime artifacts under `logs/`.
+
+## Week 7 Stage 1
+
+- Scoped field-specific validation errors to `/triage` so the new contract names `text` or an unexpected field without changing the established CRUD/auth `{"error":"Invalid request"}` behavior.
+- Kept the unfinished real-model branch behind a safe 503 while Stage 1 exercises only `LLM_STUB=1`; the provider method is patched in tests to prove stub and invalid-input paths make zero model calls.
+
+## Week 7 Stage 2
+
+- The first real triage checkpoint received a transient HTTP-success response with `choices=null`; a bounded diagnostic retry returned choices normally. Added an explicit missing-content guard so this provider shape becomes a safe service failure instead of a `TypeError`.
+- The selected free model twice returned upstream shared-pool 429 errors during the three-input checkpoint. Kept the required model, used bounded manual retries, and honored the provider's explicit 24-second retry interval; all three inputs then passed.
+
+## Week 7 Stage 0
+
+- Used the user-selected `google/gemma-4-26b-a4b-it:free` model instead of the architecture document's older `openrouter/free` placeholder.
+- The first live checkpoint reached OpenRouter but returned 401 because the manually loaded `.env` value retained its surrounding quotes. Stripping dotenv-style quotes in process memory sent the authentication header correctly; the retry returned exactly `ready`.
+
 ## W5 A9 — Global skill promotion
 
 - Installed fresh official skills from `supabase/agent-skills` instead of

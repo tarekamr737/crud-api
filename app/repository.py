@@ -28,6 +28,7 @@ def init_db(attempts: int = 10, retry_delay: float = 1.0) -> None:
         try:
             with connect() as connection:
                 with connection.cursor() as cursor:
+                    cursor.execute("SELECT pg_advisory_xact_lock(734274)")
                     cursor.execute(
                         """
                         CREATE TABLE IF NOT EXISTS tasks (
@@ -35,6 +36,34 @@ def init_db(attempts: int = 10, retry_delay: float = 1.0) -> None:
                             title TEXT NOT NULL,
                             done BOOLEAN NOT NULL DEFAULT FALSE
                         )
+                        """
+                    )
+                    cursor.execute(
+                        """
+                        CREATE TABLE IF NOT EXISTS triage_jobs (
+                            id UUID PRIMARY KEY,
+                            idempotency_key TEXT NOT NULL UNIQUE,
+                            request_hash TEXT NOT NULL,
+                            input_text TEXT NOT NULL,
+                            status TEXT NOT NULL DEFAULT 'queued'
+                                CHECK (status IN ('queued', 'running', 'succeeded', 'failed')),
+                            result JSONB,
+                            error TEXT,
+                            attempts INTEGER NOT NULL DEFAULT 0,
+                            max_attempts INTEGER NOT NULL DEFAULT 3,
+                            available_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                            lease_token UUID,
+                            lease_expires_at TIMESTAMPTZ,
+                            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                        )
+                        """
+                    )
+                    cursor.execute(
+                        """
+                        CREATE INDEX IF NOT EXISTS triage_jobs_claim_idx
+                        ON triage_jobs (available_at, created_at)
+                        WHERE status IN ('queued', 'running')
                         """
                     )
                     cursor.execute("SELECT COUNT(*) FROM tasks")

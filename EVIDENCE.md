@@ -1,5 +1,82 @@
 # Evidence
 
+## Async triage jobs — acceptance, idempotency, retries, and alerts
+
+- The final post-lock regression ran in the existing Linux API image against D:-backed PostgreSQL and returned `76 passed in 37.90s`; the only warning is the pre-existing Starlette/httpx deprecation.
+- The end-to-end acceptance returned `1 passed in 21.42s`: HTTP submission returned 202 and queued status, one stub worker iteration produced succeeded status with a validated result and zero model calls, and replaying the same key/body returned the original job ID.
+- The focused HTTP/worker/service regression returned `56 passed`; submission tests prove `POST /triage` returns 202 with `Location` and `Retry-After` headers while the model completion mock remains uncalled.
+- Contract tests prove invalid input or a missing `Idempotency-Key` returns field-specific 400, conflicting key reuse returns 409, unknown jobs return 404, and status responses never expose stored input text.
+- Worker tests prove successful work persists only the validated `TriageResult`, non-terminal failures schedule retries without leaking exception detail, and the third failed job attempt emits one safe structured `triage_job_failed` alert.
+- The focused real-PostgreSQL suite returned `3 passed in 12.09s`, proving idempotent enqueue/conflict behavior, three attempts to terminal failure, and lease-token ownership. The queue uses `FOR UPDATE SKIP LOCKED`, and startup DDL/seed work is protected by a PostgreSQL advisory transaction lock.
+- Compose started PostgreSQL with SCRAM authentication and a bind mount resolving under `D:\FlyRank Intern\Connecting CRUD to the database\.data\postgres`; no model call was made during runtime verification.
+
+## Week 7 Stage 5 — Eval, README, and release readiness
+
+- `.venv\Scripts\python.exe evals\run_evals.py` made real calls with production retries only and returned `score=100.0`, `passed_checks=24`, `total_checks=24`, `failed_case_ids=[]`, date `2026-08-13`, and prompt `triage-v1`.
+- All eight labelled cases passed: normal billing, clear bug, feature request, generic other, urgent outage, ambiguous, prompt injection, and empty-ish valid input.
+- A successful eval call logged 550 input tokens, 38 output tokens, 2,327 ms, and repair count 0; README records that exact structured line and estimates 5.88 million tokens and $0 provider charge at 10,000 daily requests on the selected free route.
+- The README's required sections were present in the mandated order and include a runnable real-model curl with an exact observed response, job card, provider/model settings, real eval result, cost log, daily estimate, and one honest next improvement.
+- The Stage 5 regression returned `46 passed in 1.89s`; `compileall` passed for `src`, `app`, and `evals`, the eval fixture count was exactly 8, and `git diff --check` passed.
+- `.env` is ignored and untracked, its history query returned no commits, and the tracked-source scan found no OpenRouter `sk-or-v1-` token.
+- The Docker image now copies `src`, `prompts`, and `logs` alongside `app`, making the triage route and versioned prompt available in the existing Compose runtime.
+- Pushed `agent/llm-support-triage` to the public canonical repository and opened draft PR [#1](https://github.com/tarekamr737/Back-End-AI-Engineering-FlyRank-Intern/pull/1) against `main`.
+
+## Week 7 Final audit — HTTP contract
+
+- `.venv\Scripts\python.exe -m pytest tests\test_triage_final_audit.py tests\test_triage.py tests\test_llm_retry.py tests\test_llm_client.py tests\test_triage_schema.py tests\test_triage_prompt.py tests\test_evals.py tests\test_auth.py tests\test_auth_dependency.py -q --basetemp=.tmp\pytest-w7-final` returned `47 passed in 2.06s`.
+- The dedicated final matrix exercised HTTP 200, 400, 422, 503, and 504 in one test. It proved invalid input and the kill switch make zero completion calls, 422 makes exactly one repair call, and neither raw model text nor private timeout detail reaches HTTP output.
+
+## Week 7 Final audit — Fresh snapshot and invariants
+
+- Exported committed `f70e820` into a new ignored directory on D:, copied `.env.example` to `.env`, created a fresh D:-local `.venv`, installed the committed requirements, and reran the committed final suite with `47 passed in 3.46s`.
+- Fresh environment creation, dependency installation, and tests took approximately 122 seconds total, below the five-minute requirement. The venv, pip cache, temp directory, and pytest base temp all remained under the D: snapshot.
+- `LLM_TIMEOUT_SECONDS` is `30.0`, SDK retries are disabled, and the custom policy is capped at three attempts. Tests prove output failure triggers no more than one repair call and raw model strings never enter HTTP responses.
+- `git rev-list --count origin/main..HEAD` returned 7 meaningful feature/audit commits, including each required Stage 0 through Stage 5 message.
+- `.env` is untracked and absent from history. Current-tree and all-history scans using a key-shaped OpenRouter regex returned no credential value; the literal prefix occurrence is only the documented audit statement itself.
+- Draft PR [#1](https://github.com/tarekamr737/Back-End-AI-Engineering-FlyRank-Intern/pull/1) is open from `agent/llm-support-triage` to `main`.
+
+## Week 7 Stage 4 — Timeout, retries, logging, and kill switch
+
+- `.venv\Scripts\python.exe -m pytest tests\test_llm_client.py tests\test_llm_retry.py tests\test_triage.py tests\test_triage_schema.py tests\test_triage_prompt.py -q --basetemp=.tmp\pytest-w7-stage4` returned `27 passed in 1.85s`.
+- Client configuration tests prove `timeout == 30.0` and SDK `max_retries == 0`; custom tests prove 1s/2s exponential delays, jitter, numeric `Retry-After`, and three attempts total for timeout/429/5xx.
+- Parameterized 400, 401, and 403 tests each made exactly one provider attempt with no sleep. A live request using a deliberately wrong process-only key emitted exactly one structured call log and returned `status=401`, proving no hidden retry.
+- Every mocked provider attempt emitted one parseable JSON line containing exactly prompt version, model, input tokens, output tokens, duration milliseconds, and repair count; successful usage recorded `11` input and `7` output tokens.
+- `LLM_ENABLED=false` took precedence over `LLM_STUB=1`, returned safe HTTP 503, and left the completion mock uncalled. Exhausted timeout mapped to safe 504; other provider failure mapped to safe 503.
+- The final Stage 4 triage/client/auth regression returned `44 passed in 1.89s`; `compileall` and `git diff --check` also passed.
+
+## Week 7 Stage 3 — Parse, repair once, and quarantine
+
+- `.venv\Scripts\python.exe -m pytest tests\test_triage.py tests\test_triage_schema.py tests\test_triage_prompt.py tests\test_llm_client.py -q --basetemp=.tmp\pytest-w7-stage3` returned `18 passed in 1.53s`.
+- A forced `category="sales"` schema violation caused exactly two completion calls total; the second request contained the broken output and safe validation error, and its valid repair returned HTTP 200.
+- Two forced non-JSON completions caused exactly one repair attempt, then HTTP 422 with only `Model output did not match the required schema`; neither raw string appeared in the response.
+- The second-failure test appended exactly one JSONL record containing timestamp, sanitized single-line input, final raw output, safe parse error, and `triage-v1` to an isolated quarantine path.
+- `.gitignore` excludes `logs/*.jsonl`, while `logs/.gitkeep` preserves the intended runtime directory without committing quarantined content.
+- The final Stage 3 triage/client/auth regression returned `35 passed in 1.44s`; `compileall`, `git diff --check`, and an explicit quarantine ignore check also passed.
+
+## Week 7 Stage 2 — Versioned prompt and real-model wiring
+
+- `.venv\Scripts\python.exe -m pytest tests\test_triage.py tests\test_triage_prompt.py tests\test_triage_schema.py tests\test_llm_client.py -q --basetemp=.tmp\pytest-w7-stage2` returned `16 passed in 1.45s`.
+- Prompt tests prove `prompts/triage-v1.md` contains role, exact schema/enums, hard rules, unsure behavior, and three examples in the required order, including ambiguous and hostile inputs.
+- A hostile multiline input remained absent from the system prompt and appeared only as escaped JSON in the separate user message; the client test proves temperature is exactly 0.
+- Three synthetic real-model checks returned schema-valid results: duplicate charge -> `billing/normal/billing`; reproducible app crash -> `bug/high/engineering`; vague issue -> `other/low/support` with confidence `0.3`.
+- The free upstream pool returned transient null choices and 429 responses during the checkpoint; bounded retries, including the advertised 24-second interval, succeeded without changing the selected model.
+- The final Stage 2 regression across triage, prompt, schema, client, and existing auth tests returned `33 passed in 1.47s`; `compileall` also completed successfully for `src` and `app`.
+
+## Week 7 Stage 1 — Schema, endpoint, and stub mode
+
+- `.venv\Scripts\python.exe -m pytest tests\test_triage.py tests\test_triage_schema.py tests\test_llm_client.py -q --basetemp=.tmp\pytest-w7-stage1` returned `12 passed in 1.48s`.
+- The endpoint test made two different valid requests with `LLM_STUB=1`, received the same schema-valid HTTP 200 JSON, and proved the OpenAI completion method was never called.
+- Missing, empty, oversized, extra-field, and null bodies returned HTTP 400 naming the offending field while the provider method remained uncalled.
+- `.venv\Scripts\python.exe -m pytest tests\test_auth.py tests\test_auth_dependency.py -q --basetemp=.tmp\pytest-w7-stage1-auth` returned `17 passed in 0.89s`, preserving the existing auth validation behavior.
+- `README.md` contains runnable PowerShell startup plus valid and invalid `curl.exe` examples for `/triage`.
+
+## Week 7 Stage 0 — Provider readiness
+
+- `.venv\Scripts\python.exe -m pytest tests\test_llm_client.py -q --basetemp=.tmp\pytest-w7-stage0` returned `3 passed in 0.71s`.
+- A bounded live OpenRouter completion using `google/gemma-4-26b-a4b-it:free` returned exactly `ready`; the key was loaded only from the ignored `.env` and was never printed.
+- `git check-ignore -v .env` matched `.gitignore:6:.env`; `.env` remains absent from tracked files, while `.env.example` contains all five LLM variable names with no secret.
+- All SDK files and test artifacts remain inside the repository-local `.venv` and `.tmp` directories on `D:`.
+
 ## W5 A9 — Public repository delivery
 
 - With explicit authorization to publish the repository's pre-existing API

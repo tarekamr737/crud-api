@@ -1,20 +1,89 @@
-# Python Backend & Data Pipeline Portfolio
+# LLM Support Triage API
 
-> Two independently runnable Python projects in one repository: a
-> PostgreSQL-backed Task API with Supabase authentication, and a polite,
-> deterministic web-scraping pipeline.
+This FastAPI API accepts an unstructured support message immediately, processes the slow LLM call in a separate worker, and exposes durable job status. Model text is treated as untrusted: the worker validates it, repairs it once when necessary, and never exposes raw completions.
 
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Supabase](https://img.shields.io/badge/Auth-Supabase-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com/)
-[![Scraper tests](https://img.shields.io/badge/scraper_tests-32%20passing-2EA44F)](scraper/tests)
+## Run it and call `/triage`
 
-## Repository overview
+From a fresh clone, copy the environment template, fill `SUPABASE_URL`, `SUPABASE_KEY`, and `LLM_API_KEY` in the ignored `.env`, then start the API, worker, and database:
+
+```powershell
+Copy-Item .env.example .env
+docker compose up --build -d
+```
+
+Queue a real-model request. `Idempotency-Key` is required so a client retry cannot create duplicate work:
+
+```powershell
+curl.exe -i -X POST http://127.0.0.1:8000/triage -H "Content-Type: application/json" -H "Idempotency-Key: demo-charge-001" -d '{"text":"I was charged twice for my monthly plan."}'
+```
+
+The API responds with HTTP 202 without calling the model:
+
+```json
+{"id":"8e642f41-5da1-475f-bacd-49524ed2ef47","status":"queued","status_url":"/triage/jobs/8e642f41-5da1-475f-bacd-49524ed2ef47"}
+```
+
+Poll the returned URL until `status` is `succeeded` or `failed`:
+
+```powershell
+curl.exe -s http://127.0.0.1:8000/triage/jobs/8e642f41-5da1-475f-bacd-49524ed2ef47
+```
+
+Example successful status using the recorded real `google/gemma-4-26b-a4b-it:free` result:
+
+```json
+{"id":"8e642f41-5da1-475f-bacd-49524ed2ef47","status":"succeeded","attempts":1,"max_attempts":3,"result":{"category":"billing","urgency":"normal","suggested_team":"billing","confidence":1.0,"reason":"The user is reporting a duplicate charge for their subscription."},"error":null,"created_at":"2026-08-13T12:00:00Z","updated_at":"2026-08-13T12:00:02Z"}
+```
+
+Reusing a key with the same body returns the same job; reusing it for different input returns 409. Workers claim jobs with expiring leases, accept that work may execute twice, and allow only the current lease owner to commit. Failures retry with bounded backoff for three job attempts. A terminal failure stores only `Triage processing failed` and emits a structured `{"event":"triage_job_failed",...,"alert":true}` line for log-based alerting.
+
+## Job card
+
+The concise product/problem, user, provider, success, safety, and scope decisions are in [`JOB-CARD.md`](JOB-CARD.md). The endpoint is deliberately one-shot triage—not chat, memory, RAG, an agent, or a decision-maker for high-impact actions.
+
+## Provider, model, and three swap settings
+
+The implementation uses OpenRouter's OpenAI-compatible API and `google/gemma-4-26b-a4b-it:free`. Swap providers or models without code changes by setting exactly these three connection variables:
+
+```dotenv
+LLM_BASE_URL=https://openrouter.ai/api/v1
+LLM_API_KEY=your_openrouter_key
+LLM_MODEL=google/gemma-4-26b-a4b-it:free
+```
+
+Operational controls are `LLM_ENABLED=false` to prevent worker model calls and `LLM_STUB=1` for deterministic zero-call development output. The real key belongs only in `.env`; never commit it or send confidential/personal data to a free provider.
+
+## Real eval score
+
+On 2026-08-13, prompt `triage-v1` scored **100.0% (24/24 key-field checks)** across exactly eight labelled billing, bug, feature, generic, outage, ambiguous, prompt-injection, and empty-ish cases. There were no failed case IDs.
+
+```powershell
+.\.venv\Scripts\python.exe evals\run_evals.py
+```
+
+## One-call cost log
+
+One successful real eval call emitted this stdout line:
+
+```json
+{"prompt_version":"triage-v1","model":"google/gemma-4-26b-a4b-it:free","input_tokens":550,"output_tokens":38,"duration_ms":2327,"repair_count":0}
+```
+
+## 10,000 requests/day estimate
+
+At the observed 588 tokens per successful request, 10,000 requests are approximately **5.88 million tokens/day**. The selected `:free` route has an estimated provider charge of **$0/day**, but its shared rate limits make it unsuitable for guaranteed 10,000-request daily throughput; any paid replacement should recalculate cost from its current input/output token prices.
+
+## What I would fix with another day
+
+I would add an explicitly approved fallback model and measure it against the same eight cases, because shared free-provider rate limits—not schema reliability—were the main observed operational weakness.
+
+---
+
+## Existing repository projects
 
 | Project | Purpose | Main technologies | Entry point |
 |---|---|---|---|
-| **Task API** | Persistent CRUD API with hosted authentication and protected routes | FastAPI, PostgreSQL, Supabase Auth, Docker Compose | `docker compose up --build` |
+| **Task API + LLM triage** | Persistent CRUD API, hosted authentication, and validated support routing | FastAPI, PostgreSQL, Supabase Auth, OpenRouter, Docker Compose | `docker compose up --build` |
 | **The Polite Scraper** | Collect and validate exactly 60 books from a public practice sandbox | Requests, Beautiful Soup, Pydantic, JSON cache | `python -m src.main` from `scraper/` |
 
 The projects share a repository but are operationally independent. The root
@@ -113,6 +182,11 @@ and inserts three sample tasks only when the table is empty.
 | `DATABASE_URL` | FastAPI | Psycopg connection string; Compose uses host `db` |
 | `SUPABASE_URL` | FastAPI | Hosted Supabase project URL |
 | `SUPABASE_KEY` | FastAPI | Publishable or legacy `anon` key |
+| `LLM_BASE_URL` | FastAPI | OpenAI-compatible provider base URL |
+| `LLM_API_KEY` | FastAPI | Provider key; keep only in ignored `.env` |
+| `LLM_MODEL` | FastAPI | Provider model identifier |
+| `LLM_ENABLED` | Worker | `false` prevents all model calls; affected jobs retry, then fail safely |
+| `LLM_STUB` | Worker | `1` completes jobs deterministically with zero model calls |
 
 `.env` is excluded from Git. `.env.example` contains only development defaults
 and placeholders.
@@ -141,6 +215,17 @@ and placeholders.
 | `GET` | `/public/info` | Public | Public example resource | 200 |
 | `GET` | `/protected/profile` | Bearer token | Return safe verified-user fields | 200 |
 | `GET` | `/protected/dashboard` | Bearer token | Protected example resource | 200 |
+
+### Asynchronous triage routes
+
+| Method | Path | Required input | Purpose | Success |
+|---|---|---|---|---:|
+| `POST` | `/triage` | JSON body + `Idempotency-Key` header | Enqueue LLM triage | 202 |
+| `GET` | `/triage/jobs/{job_id}` | Job UUID | Read status/result | 200 |
+
+Job submission validation returns 400, conflicting idempotency-key reuse returns
+409, and an unknown job ID returns 404. Model failures are recorded on the job
+instead of being returned from the submission request.
 
 Invalid request bodies return JSON `400` responses. Unknown task IDs return
 JSON `404`. Missing, malformed, invalid, tampered, or expired Bearer tokens
@@ -230,21 +315,23 @@ docker compose exec db psql -U tasks_user -d tasks \
 
 ![PostgreSQL rows queried with psql](docs/postgres-psql.png)
 
-PostgreSQL data lives in the Compose named volume `taskdata` and survives:
+PostgreSQL data lives under the ignored D-workspace path `.data/postgres` and
+survives:
 
 ```bash
 docker compose down
 docker compose up
 ```
 
-Use `docker compose down -v` only when you intentionally want to remove the
-database volume and its contents.
+Stopping Compose does not delete that bind-mounted data. Remove `.data/postgres`
+only when you intentionally want to discard the local database.
 
 ## API tests
 
-The root test suite covers CRUD behavior, PostgreSQL persistence, request
-validation, authentication responses, Bearer-token edge cases, protected-route
-reuse, logout, and OpenAPI security metadata.
+The root test suite covers CRUD behavior, PostgreSQL persistence, async triage
+idempotency/leases/retries/alerts, request validation, authentication responses,
+Bearer-token edge cases, protected-route reuse, logout, and OpenAPI security
+metadata.
 
 With PostgreSQL available and all required environment variables configured:
 
