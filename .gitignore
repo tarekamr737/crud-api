@@ -6,3 +6,4 @@ __pycache__/
 .env
 tasks.db
 *.db-journal
+logs/*.jsonl

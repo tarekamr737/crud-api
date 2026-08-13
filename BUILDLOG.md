@@ -1,5 +1,10 @@
 # Build Log
 
+## Week 7 Stage 3
+
+- Kept parse/schema errors as safe field/type summaries that exclude invalid input values. The repair request contains the broken output and that safe error as JSON-encoded user data, while HTTP responses expose only a fixed 422 message.
+- Quarantine records bound user text to 500 characters and raw completion text to 2,000 characters, replace non-printable input characters, and remain ignored JSONL runtime artifacts under `logs/`.
+
 ## Week 7 Stage 1
 
 - Scoped field-specific validation errors to `/triage` so the new contract names `text` or an unexpected field without changing the established CRUD/auth `{"error":"Invalid request"}` behavior.

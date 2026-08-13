@@ -1,5 +1,14 @@
 # Evidence
 
+## Week 7 Stage 3 — Parse, repair once, and quarantine
+
+- `.venv\Scripts\python.exe -m pytest tests\test_triage.py tests\test_triage_schema.py tests\test_triage_prompt.py tests\test_llm_client.py -q --basetemp=.tmp\pytest-w7-stage3` returned `18 passed in 1.53s`.
+- A forced `category="sales"` schema violation caused exactly two completion calls total; the second request contained the broken output and safe validation error, and its valid repair returned HTTP 200.
+- Two forced non-JSON completions caused exactly one repair attempt, then HTTP 422 with only `Model output did not match the required schema`; neither raw string appeared in the response.
+- The second-failure test appended exactly one JSONL record containing timestamp, sanitized single-line input, final raw output, safe parse error, and `triage-v1` to an isolated quarantine path.
+- `.gitignore` excludes `logs/*.jsonl`, while `logs/.gitkeep` preserves the intended runtime directory without committing quarantined content.
+- The final Stage 3 triage/client/auth regression returned `35 passed in 1.44s`; `compileall`, `git diff --check`, and an explicit quarantine ignore check also passed.
+
 ## Week 7 Stage 2 — Versioned prompt and real-model wiring
 
 - `.venv\Scripts\python.exe -m pytest tests\test_triage.py tests\test_triage_prompt.py tests\test_triage_schema.py tests\test_llm_client.py -q --basetemp=.tmp\pytest-w7-stage2` returned `16 passed in 1.45s`.
