@@ -1,5 +1,11 @@
 # Build Log
 
+## W5 A9 — Canonical idempotency
+
+- Chose stable first-seen wins for duplicate `product_url` candidates because
+  catalogue discovery order is deterministic and duplicate detail pages should
+  never be fetched or allowed to overwrite earlier provenance.
+
 ## W5 A9 — HTML cache
 
 - Pytest does not create a missing parent of `--basetemp` on this Windows

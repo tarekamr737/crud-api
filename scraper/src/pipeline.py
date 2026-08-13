@@ -53,6 +53,20 @@ def discover_book_urls(pages: list[tuple[str, str]]) -> list[str]:
     return deduplicate_urls(discovered)
 
 
+def deduplicate_records(records: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Keep the first candidate for each non-empty canonical product URL."""
+    unique_records: list[dict[str, object]] = []
+    seen_urls: set[str] = set()
+    for record in records:
+        product_url = str(record.get("product_url", ""))
+        if product_url and product_url in seen_urls:
+            continue
+        if product_url:
+            seen_urls.add(product_url)
+        unique_records.append(record)
+    return unique_records
+
+
 def validate_and_store(
     normalized_records: list[dict[str, object]], output_dir: Path
 ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
@@ -60,7 +74,7 @@ def validate_and_store(
     valid_records: list[dict[str, object]] = []
     invalid_records: list[dict[str, object]] = []
 
-    for candidate in normalized_records:
+    for candidate in deduplicate_records(normalized_records):
         try:
             valid_records.append(BookRecord.model_validate(candidate).model_dump(mode="json"))
         except ValidationError as error:

@@ -4,6 +4,7 @@ from src.models import normalize_book
 from src.parser import parse_product_urls
 from src.pipeline import (
     START_URL,
+    deduplicate_records,
     deduplicate_urls,
     discover_book_urls,
     discover_catalogue_pages,
@@ -89,7 +90,11 @@ def test_duplicate_removal_preserves_first_seen_order() -> None:
 
 def test_validation_routes_good_and_bad_records_to_separate_files(tmp_path) -> None:
     valid_candidate = normalize_book(VALID_RAW_RECORD)
-    invalid_candidate = {**valid_candidate, "title": ""}
+    invalid_candidate = {
+        **valid_candidate,
+        "title": "",
+        "product_url": "https://books.toscrape.com/catalogue/an-invalid-book/index.html",
+    }
 
     valid, invalid = validate_and_store([valid_candidate, invalid_candidate], tmp_path)
 
@@ -103,3 +108,18 @@ def test_validation_routes_good_and_bad_records_to_separate_files(tmp_path) -> N
     assert stored_errors[0]["product_url"] == invalid_candidate["product_url"]
     assert "title" in stored_errors[0]["reason"]
     assert all(record["title"] for record in stored_books)
+
+
+def test_rerun_rebuilds_one_record_per_canonical_product_url(tmp_path) -> None:
+    candidate = normalize_book(VALID_RAW_RECORD)
+    duplicate = {**candidate, "title": "Duplicate should not win"}
+
+    assert deduplicate_records([candidate, duplicate]) == [candidate]
+
+    validate_and_store([candidate, duplicate], tmp_path)
+    first_output = (tmp_path / "books.json").read_text(encoding="utf-8")
+    validate_and_store([candidate, duplicate], tmp_path)
+    second_output = (tmp_path / "books.json").read_text(encoding="utf-8")
+
+    assert first_output == second_output
+    assert len(json.loads(second_output)) == 1

@@ -1,5 +1,15 @@
 # Evidence
 
+## W5 A9 — Canonical idempotency
+
+- `..\.venv\Scripts\python.exe -m pytest tests\test_pipeline.py -q
+  --basetemp=.tmp\pytest` returned `7 passed`.
+- The idempotency test submits two candidates with the same canonical
+  `product_url`, proves first-seen deduplication returns one candidate, writes
+  twice, and verifies byte-identical `books.json` output with exactly one row.
+- Storage rebuilds both JSON files from the current run and never appends to an
+  existing output.
+
 ## W5 A9 — Validation routing
 
 - `..\.venv\Scripts\python.exe -m pytest tests\test_pipeline.py -q
