@@ -1,5 +1,14 @@
 # Evidence
 
+## Week 7 Stage 2 — Versioned prompt and real-model wiring
+
+- `.venv\Scripts\python.exe -m pytest tests\test_triage.py tests\test_triage_prompt.py tests\test_triage_schema.py tests\test_llm_client.py -q --basetemp=.tmp\pytest-w7-stage2` returned `16 passed in 1.45s`.
+- Prompt tests prove `prompts/triage-v1.md` contains role, exact schema/enums, hard rules, unsure behavior, and three examples in the required order, including ambiguous and hostile inputs.
+- A hostile multiline input remained absent from the system prompt and appeared only as escaped JSON in the separate user message; the client test proves temperature is exactly 0.
+- Three synthetic real-model checks returned schema-valid results: duplicate charge -> `billing/normal/billing`; reproducible app crash -> `bug/high/engineering`; vague issue -> `other/low/support` with confidence `0.3`.
+- The free upstream pool returned transient null choices and 429 responses during the checkpoint; bounded retries, including the advertised 24-second interval, succeeded without changing the selected model.
+- The final Stage 2 regression across triage, prompt, schema, client, and existing auth tests returned `33 passed in 1.47s`; `compileall` also completed successfully for `src` and `app`.
+
 ## Week 7 Stage 1 — Schema, endpoint, and stub mode
 
 - `.venv\Scripts\python.exe -m pytest tests\test_triage.py tests\test_triage_schema.py tests\test_llm_client.py -q --basetemp=.tmp\pytest-w7-stage1` returned `12 passed in 1.48s`.

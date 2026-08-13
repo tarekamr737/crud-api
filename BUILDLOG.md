@@ -5,6 +5,11 @@
 - Scoped field-specific validation errors to `/triage` so the new contract names `text` or an unexpected field without changing the established CRUD/auth `{"error":"Invalid request"}` behavior.
 - Kept the unfinished real-model branch behind a safe 503 while Stage 1 exercises only `LLM_STUB=1`; the provider method is patched in tests to prove stub and invalid-input paths make zero model calls.
 
+## Week 7 Stage 2
+
+- The first real triage checkpoint received a transient HTTP-success response with `choices=null`; a bounded diagnostic retry returned choices normally. Added an explicit missing-content guard so this provider shape becomes a safe service failure instead of a `TypeError`.
+- The selected free model twice returned upstream shared-pool 429 errors during the three-input checkpoint. Kept the required model, used bounded manual retries, and honored the provider's explicit 24-second retry interval; all three inputs then passed.
+
 ## Week 7 Stage 0
 
 - Used the user-selected `google/gemma-4-26b-a4b-it:free` model instead of the architecture document's older `openrouter/free` placeholder.
