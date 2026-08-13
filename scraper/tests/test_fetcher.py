@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import pytest
+import requests
 
 from src.fetcher import DEFAULT_TIMEOUT, FetchError, FetchStats, fetch, fetch_http
 
@@ -66,3 +67,54 @@ def test_fetch_then_cache_hit_avoids_a_second_request(tmp_path, capsys) -> None:
     assert stats.cache_hits == 1
     assert len(list(tmp_path.glob("*.html"))) == 1
     assert capsys.readouterr().out.splitlines() == [f"FETCH {url}", f"CACHE HIT {url}"]
+
+
+class SequenceSession:
+    def __init__(self, outcomes: list[FakeResponse | Exception]) -> None:
+        self.outcomes = outcomes
+        self.calls = 0
+
+    def get(self, url: str, *, headers: dict[str, str], timeout: float) -> FakeResponse:
+        outcome = self.outcomes[self.calls]
+        self.calls += 1
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
+
+def test_5xx_retries_once_then_succeeds() -> None:
+    session = SequenceSession([FakeResponse(503), FakeResponse(200, "recovered")])
+    delays: list[float] = []
+
+    assert fetch_http("https://example.test", session=session, sleep=delays.append) == "recovered"
+    assert session.calls == 2
+    assert delays == [0.5, 0.5]
+
+
+def test_timeout_retries_once_then_succeeds() -> None:
+    session = SequenceSession([requests.Timeout("slow"), FakeResponse(200, "recovered")])
+
+    assert (
+        fetch_http("https://example.test", session=session, sleep=lambda _: None)
+        == "recovered"
+    )
+    assert session.calls == 2
+
+
+def test_5xx_fails_after_exactly_one_retry() -> None:
+    session = SequenceSession([FakeResponse(500), FakeResponse(502)])
+
+    with pytest.raises(FetchError, match="HTTP 502"):
+        fetch_http("https://example.test", session=session, sleep=lambda _: None)
+
+    assert session.calls == 2
+
+
+@pytest.mark.parametrize("status_code", [403, 404])
+def test_403_and_404_are_never_retried(status_code: int) -> None:
+    session = SequenceSession([FakeResponse(status_code), FakeResponse(200)])
+
+    with pytest.raises(FetchError, match=rf"HTTP {status_code}"):
+        fetch_http("https://example.test", session=session, sleep=lambda _: None)
+
+    assert session.calls == 1

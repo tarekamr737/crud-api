@@ -46,16 +46,29 @@ def fetch_http(
     timeout: float = DEFAULT_TIMEOUT,
     sleep: Callable[[float], None] = time.sleep,
 ) -> str:
-    """Fetch one page with the project's required request safeguards."""
-    sleep(MIN_REQUEST_DELAY)
-    response = session.get(
-        url,
-        headers={"User-Agent": USER_AGENT},
-        timeout=timeout,
-    )
-    if response.status_code != 200:
+    """Fetch one page with safeguards and one allowed transient retry."""
+    for attempt in range(2):
+        sleep(MIN_REQUEST_DELAY)
+        try:
+            response = session.get(
+                url,
+                headers={"User-Agent": USER_AGENT},
+                timeout=timeout,
+            )
+        except requests.Timeout as error:
+            if attempt == 0:
+                continue
+            raise FetchError(f"{url}: timeout after one retry") from error
+        except requests.RequestException as error:
+            raise FetchError(f"{url}: request failed: {error}") from error
+
+        if response.status_code == 200:
+            return response.text
+        if 500 <= response.status_code <= 599 and attempt == 0:
+            continue
         raise FetchError(f"{url}: HTTP {response.status_code}")
-    return response.text
+
+    raise AssertionError("unreachable fetch state")
 
 
 def cache_path_for(url: str, cache_dir: Path) -> Path:

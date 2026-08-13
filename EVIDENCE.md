@@ -1,5 +1,15 @@
 # Evidence
 
+## W5 A9 — Retry policy
+
+- `..\.venv\Scripts\python.exe -m pytest tests\test_fetcher.py -q
+  --basetemp=.tmp\pytest` returned `8 passed`.
+- Sequence-based tests prove 5xx → 200 and timeout → 200 each make exactly two
+  requests, two 5xx responses fail after exactly two requests, and 403/404
+  each fail after exactly one request.
+- Both transient attempts receive the 0.5-second delay; every attempt still
+  uses the same identifiable User-Agent and explicit timeout.
+
 ## W5 A9 — Page-level fault isolation
 
 - `..\.venv\Scripts\python.exe -m pytest tests\test_pipeline.py -q
