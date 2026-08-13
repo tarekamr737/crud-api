@@ -1,5 +1,17 @@
 # Evidence
 
+## W5 A9 — Final core acceptance
+
+- `..\.venv\Scripts\python.exe -m pytest -q --basetemp=.tmp\pytest`
+  returned `32 passed in 0.36s`.
+- Direct final output inspection returned `books=60 unique=60 errors=0
+  catalogue=3 discovered=60 valid=60 failed=0`.
+- The successful rerun report records `pages_fetched=0` and `cache_hits=63`;
+  the fake-URL acceptance separately proves one broken detail page does not
+  prevent 60 good records.
+- `git rev-list --count 2bdd61c..HEAD` returned 19 meaningful W5 A9 commits
+  before this final acceptance commit, exceeding the required seven.
+
 ## W5 A9 — Clean-snapshot run command
 
 - Exported committed `HEAD` to a fresh ignored directory under
