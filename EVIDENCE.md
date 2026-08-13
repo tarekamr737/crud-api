@@ -1,5 +1,15 @@
 # Evidence
 
+## W5 A9 — Pydantic record schema
+
+- `..\.venv\Scripts\python.exe -m pytest tests\test_models.py -q
+  --basetemp=.tmp\pytest` returned `10 passed`.
+- The finished `BookRecord` contains each of the eight raw/provenance fields
+  plus numeric `price_gbp`, forbids extra fields, permits `description=None`,
+  and serializes URLs and timestamps as JSON strings.
+- Parameterized malformed-record tests reject an empty title, invalid product
+  URL, negative price, and invalid timestamp.
+
 ## W5 A9 — Price normalization
 
 - `..\.venv\Scripts\python.exe -m pytest tests\test_models.py -q
