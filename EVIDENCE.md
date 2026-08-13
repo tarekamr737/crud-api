@@ -1,5 +1,15 @@
 # Evidence
 
+## W5 A9 — Target classification
+
+- A polite request with an identifiable User-Agent and 15-second timeout to
+  `https://books.toscrape.com/robots.txt` returned HTTP 404 on 2026-08-13.
+- The target homepage describes itself as a demo website for web-scraping
+  purposes, and `scraper/README.md` limits collection to the first three
+  catalogue pages and their 60 discovered products.
+- The README records the target, robots result, collected fields, scope, and
+  required site-reuse ethics statement.
+
 ## A4 Baseline — Existing CRUD inspection
 
 - `app/main.py` exposes the existing `/`, `/health`, `/tasks`, and `/tasks/{task_id}` contracts and delegates all persistence to `app/repository.py`.

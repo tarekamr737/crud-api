@@ -1,5 +1,12 @@
 # Build Log
 
+## W5 A9 — Target classification
+
+- The target has no published `/robots.txt` file (HTTP 404). Treated that as
+  an absence of site-specific directives, not as permission to crawl broadly;
+  the implementation remains limited to the specified 3 + 60 pages and the
+  stricter assignment politeness rules.
+
 ## A4 Baseline
 
 - The repository `.venv` did not contain pytest, while system Python had pytest 8.4.2. A system-Python baseline run then stalled because PostgreSQL was unreachable and Docker API access was denied in the sandbox; it was terminated without modifying project state. Source inspection established the CRUD contract for later regression checks.
